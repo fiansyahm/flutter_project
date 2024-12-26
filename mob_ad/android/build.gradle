@@ -1,0 +1,32 @@
+// Konfigurasi untuk semua subprojek
+allprojects {
+    repositories {
+        google() // Repository untuk dependensi Google
+        mavenCentral() // Repository untuk dependensi Maven
+    }
+}
+
+// Konfigurasi direktori build
+rootProject.buildDir = "../build"
+
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+    project.evaluationDependsOn(":app")
+}
+
+// Tugas untuk membersihkan build
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+
+// Konfigurasi build script
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.1' // Pastikan ini sesuai dengan Gradle Wrapper
+        classpath 'com.google.gms:google-services:4.3.15' // Plugin untuk Google Services
+    }
+}

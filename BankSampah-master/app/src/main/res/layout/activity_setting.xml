@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".SettingActivity"
+    android:fitsSystemWindows="true">
+
+    <include android:id="@+id/toolbar" layout="@layout/toolbar"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/_8sdp"
+            android:layout_marginRight="@dimen/_8sdp"
+            android:layout_marginTop="@dimen/_8sdp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Masukkan Nama"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <EditText
+                android:id="@+id/input_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/_13sdp"
+                android:background="@drawable/rectangle_input"
+                android:hint="Masukkan Nama"
+                android:layout_marginTop="@dimen/_4sdp"
+                android:inputType="text"
+                android:paddingHorizontal="@dimen/_10sdp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Masukkan URL"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <EditText
+                android:id="@+id/input_url"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/_13sdp"
+                android:background="@drawable/rectangle_input"
+                android:hint="Masukkan URL"
+                android:layout_marginTop="@dimen/_4sdp"
+                android:inputType="textWebEditText"
+                android:paddingHorizontal="@dimen/_10sdp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Masukkan Password"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <EditText
+                android:id="@+id/input_password"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/_13sdp"
+                android:background="@drawable/rectangle_input"
+                android:hint="Masukkan Password"
+                android:layout_marginTop="@dimen/_4sdp"
+                android:inputType="textPassword"
+                android:paddingHorizontal="@dimen/_10sdp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Masukkan Keterangan"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <EditText
+                android:id="@+id/inputAboutUs"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_150sdp"
+                android:layout_marginBottom="@dimen/_13sdp"
+                android:gravity="top|left"
+                android:background="@drawable/rectangle_input"
+                android:hint="Masukkan Keterangan"
+                android:layout_marginTop="@dimen/_4sdp"
+                android:inputType="textWebEditText"
+                android:padding="@dimen/_8sdp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pilih Gambar SplashScreen"
+                android:textColor="@color/black"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <Button
+                android:id="@+id/btnPickLogo"
+                android:layout_width="@dimen/_80sdp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_8sdp"
+                android:text="Pick"
+                android:textColor="@color/white"
+                android:layout_marginBottom="@dimen/_8sdp"
+                android:background="@drawable/rectangle_button"/>
+
+            <ImageView
+                android:id="@+id/imgLogo"
+                android:layout_width="@dimen/_100sdp"
+                android:layout_height="@dimen/_100sdp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pilih Gambar Background"
+                android:textColor="@color/black"
+                android:layout_marginTop="@dimen/_8sdp"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <Button
+                android:id="@+id/btnPickBg"
+                android:layout_width="@dimen/_80sdp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_8sdp"
+                android:layout_marginBottom="@dimen/_4sdp"
+                android:text="Pick"
+                android:textColor="@color/white"
+                android:background="@drawable/rectangle_button"/>
+
+            <ImageView
+                android:id="@+id/imgBg"
+                android:layout_width="@dimen/_100sdp"
+                android:layout_height="@dimen/_150sdp"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pilih Theme"
+                android:textColor="@color/black"
+                android:layout_marginTop="@dimen/_8sdp"
+                android:visibility="visible"
+                android:textSize="@dimen/_12sdp"
+                android:textStyle="bold"
+                android:layout_gravity="left"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dip"
+                android:padding="10dip"
+                android:visibility="visible"
+                android:background="@android:color/white"
+                android:id="@+id/Layout_teal">
+
+                <LinearLayout
+                    android:layout_width="30dip"
+                    android:layout_height="35dip"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:elevation="5dip"
+                    android:background="@color/colorPrimaryTeal"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Teal"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:padding="8dip"
+                    android:layout_marginLeft="10dip"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dip"
+                android:padding="10dip"
+                android:visibility="visible"
+                android:background="@android:color/white"
+                android:id="@+id/Layout_cyan">
+
+                <LinearLayout
+                    android:layout_width="30dip"
+                    android:layout_height="35dip"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:elevation="5dip"
+                    android:background="@color/colorPrimaryCyan"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Cyan"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:padding="8dip"
+                    android:layout_marginLeft="10dip"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dip"
+                android:padding="10dip"
+                android:visibility="visible"
+                android:background="@android:color/white"
+                android:id="@+id/Layout_pink">
+
+                <LinearLayout
+                    android:layout_width="30dip"
+                    android:layout_height="35dip"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:elevation="5dip"
+                    android:background="@color/pink"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pink"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:padding="8dip"
+                    android:layout_marginLeft="10dip"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="10dip"
+                android:padding="10dip"
+                android:visibility="visible"
+                android:background="@android:color/white"
+                android:id="@+id/Layout_indigo">
+
+                <LinearLayout
+                    android:layout_width="30dip"
+                    android:layout_height="35dip"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:elevation="5dip"
+                    android:background="@color/indigo"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Indigo"
+                    android:gravity="center"
+                    android:clickable="false"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:padding="8dip"
+                    android:layout_marginLeft="10dip"/>
+
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/_8sdp"
+                android:layout_marginBottom="@dimen/_16sdp"
+                android:text="Simpan"
+                android:textColor="@color/white"
+                android:background="@drawable/rectangle_button"/>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+    </ScrollView>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

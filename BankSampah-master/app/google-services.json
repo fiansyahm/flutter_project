@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "855471929133",
+    "project_id": "banksampahdigitalamanah",
+    "storage_bucket": "banksampahdigitalamanah.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855471929133:android:fb413d0b6513722e0405a4",
+        "android_client_info": {
+          "package_name": "com.banksampah.digitalamanah"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "855471929133-10ntna0ic78iue2dh0uklrdn0v9qbr5t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBe_3-RHkF7xzxL0oRP4FvMPyPHjZhArwo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "855471929133-10ntna0ic78iue2dh0uklrdn0v9qbr5t.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

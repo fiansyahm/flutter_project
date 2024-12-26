@@ -38,6 +38,8 @@ dependencies:
   intl: ^0.18.0
   firebase_database: ^10.0.0 # Pastikan menggunakan versi terbaru
   firebase_core: ^2.14.0     # Wajib untuk inisialisasi Firebase
+  pdf: ^3.6.0
+  printing: ^5.8.0
 
 dev_dependencies:
   flutter_test:

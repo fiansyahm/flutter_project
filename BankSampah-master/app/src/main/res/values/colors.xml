@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="blue">#00B2C9</color>
+    <!-- Teal Theme Colors -->
+    <color name="colorPrimaryTeal">#008577</color>
+    <color name="colorPrimaryDarkTeal">#00574B</color>
+    <color name="colorAccentTeal">#D81B60</color>
+
+    <!-- Cyan Theme Colors -->
+    <color name="colorPrimaryCyan">#26c6da</color>
+    <color name="colorPrimaryDarkCyan">#0095a8</color>
+    <color name="colorAccentCyan">#ffca28</color>
+
+    <color name="indigo">#3F51B5</color>
+    <color name="indigoDark">#303F9F</color>
+    <color name="indigoAccent">#757de8</color>
+
+    <color name="pink">#e91e63</color>
+    <color name="pinkDark">#b0003a</color>
+    <color name="pinkAccent">#ff6090</color>
+</resources>
