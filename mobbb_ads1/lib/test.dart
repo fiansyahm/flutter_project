@@ -3,20 +3,52 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'model_main.dart';
 import 'detail_page.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/services.dart'; // <-- Add this import
 
 void main() {
   runApp(const Home());
 }
 
 class Home extends StatelessWidget {
+  static const MethodChannel _channel = MethodChannel('com.example.mobbb_ads/ad');
+
   const Home({super.key});
+
+  void _showAdIfNeeded(String heroName) {
+    if (heroName == "Time Boxing") {
+      _channel.invokeMethod('showAd');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Leadership Skill'),
+      ),
+      body: ListView.builder(
+        itemCount: 10, // Example count
+        itemBuilder: (context, index) {
+          final heroName = 'Time Boxing'; // Example hero name
+          return ListTile(
+            title: Text(heroName),
+            onTap: () {
+              _showAdIfNeeded(heroName);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DetailPahlawan(
+                    title: item.title ?? 'Unknown',
+                    category: item.category ?? '',
+                    img: item.img ?? '',
+                    description: item.description ?? [],
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -29,23 +61,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomeState extends State<HomePage> {
-  static const MethodChannel _channel = MethodChannel('com.example.mobbb_ads/ad');
-
-  void _showAdIfNeeded(String heroName) {
-    if (heroName == "PREMIUM") {
-      _channel.invokeMethod('showAd');
-    }
-  }
-
   // URL dasar
   final String baseUrl = 'https://api.npoint.io';
+
+  // URL untuk mengambil data JSON
   late String url;
+
+  // Bahasa yang tersedia
   final List<String> languages = ['ID', 'EN', 'SA', 'RU', 'BR'];
   String selectedLanguage = 'ID';
 
+  // Fungsi untuk memuat data dari URL
   Future<List<ModelMain>> readJsonData() async {
     try {
       final response = await http.get(Uri.parse(url));
+
       if (response.statusCode == 200) {
         final listData = json.decode(response.body) as List<dynamic>;
         return listData.map((e) => ModelMain.fromJson(e)).toList();
@@ -70,16 +100,20 @@ class _HomeState extends State<HomePage> {
         filterData = searchController.text;
       });
     });
+
     scrollController.addListener(() {
       setState(() {
         showFab = scrollController.offset > 10;
       });
     });
+
+    // Set URL default berdasarkan bahasa awal
     updateUrl();
   }
 
   void updateUrl() {
     setState(() {
+      // URL berdasarkan bahasa
       switch (selectedLanguage) {
         case 'ID':
           url = '$baseUrl/c84c0eeacbdb62b5da1d';
@@ -143,6 +177,7 @@ class _HomeState extends State<HomePage> {
             padding: const EdgeInsets.all(8),
             child: Column(
               children: [
+                // Dropdown untuk memilih bahasa
                 DropdownButton<String>(
                   value: selectedLanguage,
                   items: languages.map((lang) {
@@ -159,6 +194,7 @@ class _HomeState extends State<HomePage> {
                   },
                 ),
                 const SizedBox(height: 10),
+                // Search bar
                 TextField(
                   controller: searchController,
                   decoration: InputDecoration(
@@ -230,7 +266,6 @@ class _HomeState extends State<HomePage> {
     final item = items[index];
     return GestureDetector(
       onTap: () {
-        _showAdIfNeeded(item.level.toString());
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -271,35 +306,10 @@ class _HomeState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title ?? 'Unknown',
-                            style: const TextStyle(color: Colors.black, fontSize: 18),
-                            maxLines: 2,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (item.level == 'BASIC')
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'Free',
-                              style: TextStyle(color: Colors.green, fontSize: 12),
-                            ),
-                          )
-                        else if (item.level == 'PREMIUM')
-                          Icon(
-                            Icons.diamond,
-                            color: Colors.blue,
-                            size: 18,
-                          ),
-                      ],
+                    Text(
+                      item.title ?? 'Unknown',
+                      style: const TextStyle(color: Colors.black, fontSize: 18),
+                      maxLines: 2,
                     ),
                     const SizedBox(height: 10),
                     Text(

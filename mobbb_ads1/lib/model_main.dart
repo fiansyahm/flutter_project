@@ -5,6 +5,7 @@ class ModelMain {
   String? category;
   List<Map<String, String>>? description;
   String? img;
+  String? level;
 
   // Konstruktor
   ModelMain(
@@ -12,6 +13,7 @@ class ModelMain {
       this.category,
       this.description,
       this.img,
+      this.level,
       );
 
   // Konstruktor dari JSON
@@ -24,6 +26,8 @@ class ModelMain {
           .toList();
     }
     img = json['img'];
+    level=json['level'];
+
   }
 
   // Metode untuk mengubah objek menjadi JSON
@@ -33,6 +37,7 @@ class ModelMain {
       'category': category,
       'description': description,
       'img': img,
+      'level':level,
     };
   }
 }
