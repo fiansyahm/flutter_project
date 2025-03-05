@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -8,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../models/city_model.dart';
 import '../models/jadwal_model.dart';
 import '../services/jadwal_service.dart';
+import 'dart:convert';
 
 class JadwalScreen extends StatefulWidget {
   @override
@@ -56,9 +58,8 @@ class _JadwalScreenState extends State<JadwalScreen> {
         }
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
-      String cityId = await _getCityIdFromCoordinates(position.latitude, position.longitude);
+      String cityName = await getCityName();
+      String cityId = await _getCityIdFromCoordinates(cityName);
       Jadwal result = await jadwalService.getJadwal(cityId);
       setState(() {
         jadwal = result;
@@ -76,12 +77,53 @@ class _JadwalScreenState extends State<JadwalScreen> {
     }
   }
 
-  // Dummy function to get city ID from coordinates (replace with actual API call if needed)
-  Future<String> _getCityIdFromCoordinates(double lat, double lon) async {
-    // For simplicity, we'll assume a fixed city ID (e.g., Jakarta: 1301).
-    // In a real app, use a reverse geocoding API (e.g., Google Maps Geocoding API) to get the city.
-    return '1301'; // Jakarta's ID from the API you’re using
+  Future<String> getCityName() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, position.longitude);
+
+      if (placemarks.isNotEmpty) {
+        return placemarks.first.locality ?? 'Unknown City';
+      } else {
+        return 'City not found';
+      }
+    } catch (e) {
+      return 'Error: $e';
+    }
   }
+
+  // Dummy function to get city ID from coordinates (replace with actual API call if needed)
+  Future<String> _getCityIdFromCoordinates(String cityName) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.myquran.com/v2/sholat/kota/cari/$cityName'),
+      );
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        if (jsonResponse.containsKey('data') && jsonResponse['data'] is List) {
+          List<dynamic> cities = jsonResponse['data'];
+
+          if (cities.isNotEmpty) {
+            return cities.first['id'].toString(); // Mengambil ID kota pertama
+          } else {
+            return 'City ID not found';
+          }
+        } else {
+          return 'Invalid response format';
+        }
+      } else {
+        throw Exception('Failed to fetch city ID: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      return 'Error: $e';
+    }
+  }
+
 
   // Start countdown for next prayer
   void _startPrayerCountdown() {
