@@ -7,7 +7,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'firebase_options.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -21,17 +20,66 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ReceiptApp(),
+      home: HomePage(),
     );
   }
 }
 
-class ReceiptApp extends StatefulWidget {
+// HomePage with BottomNavigationBar
+class HomePage extends StatefulWidget {
   @override
-  _ReceiptAppState createState() => _ReceiptAppState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _ReceiptAppState extends State<ReceiptApp> {
+class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<Widget> _pages = [
+      PriceUpdateFormPage(),
+      PriceUpdateListPage(),
+    ];
+
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.edit),
+            label: 'Form Tagihan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'Daftar Tagihan',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+// Page 1: Price Update Form
+class PriceUpdateFormPage extends StatefulWidget {
+  final Map<String, dynamic>? record;
+  final String? editingKey;
+
+  PriceUpdateFormPage({this.record, this.editingKey});
+
+  @override
+  _PriceUpdateFormPageState createState() => _PriceUpdateFormPageState();
+}
+
+class _PriceUpdateFormPageState extends State<PriceUpdateFormPage> {
   final _formKey = GlobalKey<FormState>();
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   final _nameController = TextEditingController();
@@ -44,7 +92,6 @@ class _ReceiptAppState extends State<ReceiptApp> {
   String _paymentMethod = 'Tunai';
   String _editingKey = '';
 
-  // Fungsi untuk memformat angka menjadi format Rupiah
   String formatRupiah(String amount) {
     if (amount.isEmpty) return "Rp 0";
     final formatter = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
@@ -54,8 +101,18 @@ class _ReceiptAppState extends State<ReceiptApp> {
   @override
   void initState() {
     super.initState();
+    if (widget.record != null && widget.editingKey != null) {
+      _editingKey = widget.editingKey!;
+      _nameController.text = widget.record!['name'];
+      _skuController.text = widget.record!['sku'];
+      _regionController.text = widget.record!['region'];
+      _amountController.text = widget.record!['amount'];
+      _dateController.text = widget.record!['date'];
+      _timeController.text = widget.record!['time'];
+      _paymentMethod = widget.record!['payment'];
+      _cashierController.text = widget.record!['cashier'];
+    }
 
-    // Menambahkan pemformatan untuk amountController
     _amountController.addListener(() {
       final text = _amountController.text;
       final formatted = _formatCurrency(text.replaceAll('.', ''));
@@ -68,47 +125,8 @@ class _ReceiptAppState extends State<ReceiptApp> {
     });
   }
 
-  // Fungsi untuk memformat input dengan titik setiap 3 angka
   String _formatCurrency(String text) {
-    // final amount = int.tryParse(text) ?? 0;
-    // final formatted = NumberFormat('#,###').format(amount);  // Menambahkan pemisah ribuan
-    // return formatted;
     return text;
-  }
-
-  Future<void> _generateTransactionPDF(Map<String, dynamic> record) async {
-    final pdf = pw.Document();
-
-    pdf.addPage(pw.Page(
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            // pw.Text('YAYASAN BUDI DHARMA KIRT', style: pw.TextStyle(fontSize: 12)),
-            // pw.Text('Kelenteng Hok Heng Kiong Kota Tangerang', style: pw.TextStyle(fontSize: 10)),
-            // pw.Text('WA 0838-0870-2766(Sukardi/Ang Tek Kang)', style: pw.TextStyle(fontSize: 10)),
-            pw.SizedBox(height: 10),
-            pw.Text('Produk: ${record['name']}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Lokasi: ${record['region']}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Nilai: ${formatRupiah(record['amount'])}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Tanggal: ${record['date']}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Jatuh Tempo: ${record['time']}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Pembayaran Via: ${record['payment']}', style: pw.TextStyle(fontSize: 10)),
-            pw.Text('Agent: ${record['cashier']}', style: pw.TextStyle(fontSize: 10)),
-            pw.SizedBox(height: 20),
-            // pw.Text('REK BCA', style: pw.TextStyle(fontSize: 10)),
-            // pw.Text('3990345731', style: pw.TextStyle(fontSize: 10)),
-            // pw.Text('A/N YAYASAN BUDI DHARMA KIRT', style: pw.TextStyle(fontSize: 10)),
-            // pw.SizedBox(height: 20),
-            // pw.Text('Sumbangan yang Anda berikan telah kami terima.', style: pw.TextStyle(fontSize: 10)),
-            // pw.Text('Kami mengucapkan terimakasih sebesar-besarnya', style: pw.TextStyle(fontSize: 10)),
-            // pw.Text('dan semoga Anda selalu dilimpahi dengan kebaikan.', style: pw.TextStyle(fontSize: 10)),
-          ],
-        );
-      },
-    ));
-
-    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
   }
 
   Future<void> _selectDate() async {
@@ -135,16 +153,6 @@ class _ReceiptAppState extends State<ReceiptApp> {
     }
   }
 
-  Future<void> _selectTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (pickedTime != null) {
-      _timeController.text = pickedTime.format(context);
-    }
-  }
-
   void _addOrUpdateRecord() {
     if (_formKey.currentState!.validate()) {
       final newRecord = {
@@ -161,13 +169,17 @@ class _ReceiptAppState extends State<ReceiptApp> {
       if (_editingKey.isEmpty) {
         _database.child('records_tagihan').push().set(newRecord).then((_) {
           _clearForm();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload data berhasil')),
+          );
         });
       } else {
         _database.child('records_tagihan').child(_editingKey).set(newRecord).then((_) {
-          setState(() {
-            _editingKey = '';
-          });
           _clearForm();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Upload data berhasil')),
+          );
+          Navigator.pop(context); // Return to list page after editing
         });
       }
     }
@@ -182,167 +194,14 @@ class _ReceiptAppState extends State<ReceiptApp> {
     _timeController.clear();
     _cashierController.clear();
     _paymentMethod = 'Tunai';
+    _editingKey = '';
   }
-
-  void _deleteRecord(String key) {
-    _database.child('records_tagihan').child(key).remove().then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Record deleted successfully')),
-      );
-    }).catchError((error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting record: $error')),
-      );
-    });
-  }
-
-  void _editRecord(Map<String, dynamic> record, String key) {
-    _editingKey = key;
-    _nameController.text = record['name'];
-    _skuController.text = record['sku'];
-    _regionController.text = record['region'];
-    _amountController.text = record['amount'];
-    _dateController.text = record['date'];
-    _timeController.text = record['time'];
-    _paymentMethod = record['payment'];
-    _cashierController.text = record['cashier'];
-  }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _amountController.addListener(() {
-  //     final formatted = formatRupiah(_amountController.text.replaceAll('.', ''));
-  //     if (_amountController.text != formatted) {
-  //       _amountController.value = _amountController.value.copyWith(
-  //         text: formatted,
-  //         selection: TextSelection.collapsed(offset: formatted.length),
-  //       );
-  //     }
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          children: [
-            Text('', style: TextStyle(fontSize: 16)),
-            // Text('YAYASAN BUDI DHARMA KIRT', style: TextStyle(fontSize: 16)),
-            // Text('Kelenteng Hok Heng Kiong Kota Tangerang', style: TextStyle(fontSize: 14)),
-            // Text('WA 0838-0870-2766(Sukardi/Ang Tek Kang)', style: TextStyle(fontSize: 12)),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.print),
-            onPressed: () async {
-              // Pilih rentang tanggal menggunakan showDateRangePicker
-              final DateTimeRange? dateRange = await showDateRangePicker(
-                context: context,
-                initialDateRange: null,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-
-              if (dateRange != null) {
-                final startDate = dateRange.start;
-                final endDate = dateRange.end;
-
-                // Fetch data dari Firebase
-                final snapshot = await _database.child('records_tagihan').get();
-                if (snapshot.exists) {
-                  final allRecords = Map<String, dynamic>.from(snapshot.value as Map<dynamic, dynamic>);
-                  final filteredRecords = allRecords.entries.where((entry) {
-                    final recordDate = DateFormat('dd-MM-yyyy').parse(entry.value['date']);
-                    return recordDate.isAfter(startDate.subtract(Duration(days: 1))) &&
-                        recordDate.isBefore(endDate.add(Duration(days: 1)));
-                  }).toList();
-
-                  if (filteredRecords.isNotEmpty) {
-                    final pdf = pw.Document();
-
-                    // Hitung total donatur dan total uang
-                    int totalDonatur = filteredRecords.length;
-                    final totalUang = filteredRecords.fold(0, (sum, entry) {
-                      final record = Map<String, dynamic>.from(entry.value);
-                      // Ambil nilai nominal dari record dan konversi menjadi integer
-                      final amount = int.tryParse(record['amount'].replaceAll('.', '')) ?? 0;
-                      return sum + amount;
-                    });
-
-                    pdf.addPage(
-                      pw.Page(
-                        build: (pw.Context context) {
-                          return pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.start,
-                            children: [
-                              pw.Text('Laporan Tagihan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                              pw.Text('Periode: ${DateFormat('dd-MM-yyyy').format(startDate)} - ${DateFormat('dd-MM-yyyy').format(endDate)}'),
-                              pw.SizedBox(height: 10),
-                              pw.Table(
-                                border: pw.TableBorder.all(),
-                                columnWidths: {
-                                  0: pw.FlexColumnWidth(0.5), //No
-                                  1: pw.FlexColumnWidth(1.5), // Produk
-                                  2: pw.FlexColumnWidth(1), //Lokasi
-                                  3: pw.FlexColumnWidth(1.5), //Nilai
-                                  4: pw.FlexColumnWidth(1.25), //Tanggak
-                                  5: pw.FlexColumnWidth(1.25), //Pembayaran
-                                  6: pw.FlexColumnWidth(1.5), //Agent
-                                },
-                                children: [
-                                  pw.TableRow(
-                                    children: [
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('No')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Produk')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Lokasi')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Nilai')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Tanggal')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Pembayaran Via')),
-                                      pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Agent')),
-                                    ],
-                                  ),
-                                  ...filteredRecords.map((entry) {
-                                    final record = Map<String, dynamic>.from(entry.value);
-                                    return pw.TableRow(
-                                      children: [
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text((filteredRecords.indexOf(entry) + 1).toString())), // No Urut
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['name'] ?? '-')),
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['region'] ?? '-')),
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(formatRupiah(record['amount'] ?? '0'))),
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['date'] ?? '-')),
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['payment'] ?? '-')), // Via
-                                        pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['cashier'] ?? '-')), // Kasir
-                                      ],
-                                    );
-                                  }),
-                                ],
-                              ),
-                              pw.SizedBox(height: 10),
-                              pw.Text('Jumlah Transaksi: $totalDonatur', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                              pw.Text('Total Tagihan: ${formatRupiah(totalUang.toString())}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-                            ],
-                          );
-                        },
-                      ),
-                    );
-
-
-
-                    // Print or Save PDF
-                    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
-                  }
-
-
-                }
-              }
-            },
-          ),
-        ],
-
-
+        title: Text('Form Tagihan', style: TextStyle(fontSize: 16)),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
@@ -351,7 +210,7 @@ class _ReceiptAppState extends State<ReceiptApp> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Biaya Pembayaran Tagihan Rutin Harian,Bulanan,Tahunan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('Biaya Pembayaran Tagihan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
               TextFormField(
                 controller: _dateController,
@@ -373,25 +232,23 @@ class _ReceiptAppState extends State<ReceiptApp> {
               TextFormField(
                 controller: _skuController,
                 decoration: InputDecoration(labelText: 'No Produk'),
-                validator: (value) => value == null || value.isEmpty ? 'Nama tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty ? 'No Produk tidak boleh kosong' : null,
               ),
               TextFormField(
                 controller: _cashierController,
                 decoration: InputDecoration(labelText: 'Agent'),
-                validator: (value) => value == null || value.isEmpty ? 'Kasir tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Agent tidak boleh kosong' : null,
               ),
               TextFormField(
                 controller: _regionController,
                 decoration: InputDecoration(labelText: 'Lokasi'),
-                validator: (value) => value == null || value.isEmpty ? 'Daerah tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Lokasi tidak boleh kosong' : null,
               ),
               TextFormField(
                 controller: _amountController,
                 decoration: InputDecoration(labelText: 'Nilai (Rp)'),
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (value) => value == null || value.isEmpty ? 'Nominal tidak boleh kosong' : null,
               ),
               TextFormField(
@@ -404,12 +261,12 @@ class _ReceiptAppState extends State<ReceiptApp> {
                   ),
                 ),
                 readOnly: true,
-                validator: (value) => value == null || value.isEmpty ? 'Jam tidak boleh kosong' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Jatuh Tempo tidak boleh kosong' : null,
               ),
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
                 decoration: InputDecoration(labelText: 'Pembayaran Via'),
-                items: ['Credit Card','Tunai', 'Transfer']
+                items: ['Credit Card', 'Tunai', 'Transfer']
                     .map((method) => DropdownMenuItem(value: method, child: Text(method)))
                     .toList(),
                 onChanged: (value) => setState(() => _paymentMethod = value!),
@@ -419,54 +276,6 @@ class _ReceiptAppState extends State<ReceiptApp> {
                 onPressed: _addOrUpdateRecord,
                 child: Text(_editingKey.isEmpty ? 'Simpan' : 'Update'),
               ),
-              SizedBox(height: 20.0),
-              Center(
-                child: Text('Daftar Tagihan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-              StreamBuilder(
-                stream: _database.child('records_tagihan').onValue,
-                builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
-                    final records = Map<String, dynamic>.from(
-                        snapshot.data!.snapshot.value as Map<dynamic, dynamic>
-                    );
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: records.keys.length,
-                      itemBuilder: (context, index) {
-                        final key = records.keys.elementAt(index);
-                        final record = Map<String, dynamic>.from(records[key]);
-                        return ListTile(
-                          title: Text('${record['name']} - ${record['region']}'),
-                          subtitle: Text('${formatRupiah(record['amount'])} - ${record['date']}'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.edit),
-                                onPressed: () => _editRecord(record, key),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () => _deleteRecord(key),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.print),
-                                onPressed: () => _generateTransactionPDF(record),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  } else {
-                    return Center(child: Text('Belum ada data'));
-                  }
-                },
-              ),
             ],
           ),
         ),
@@ -475,5 +284,267 @@ class _ReceiptAppState extends State<ReceiptApp> {
   }
 }
 
+// Page 2: Price Update List
+class PriceUpdateListPage extends StatefulWidget {
+  @override
+  _PriceUpdateListPageState createState() => _PriceUpdateListPageState();
+}
 
+class _PriceUpdateListPageState extends State<PriceUpdateListPage> {
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
+  String formatRupiah(String amount) {
+    if (amount.isEmpty) return "Rp 0";
+    final formatter = NumberFormat.currency(locale: 'id', symbol: 'Rp ', decimalDigits: 0);
+    return formatter.format(int.tryParse(amount.replaceAll('.', '')) ?? 0);
+  }
+
+  Future<void> _generateTransactionPDF(Map<String, dynamic> record) async {
+    final pdf = pw.Document();
+    pdf.addPage(pw.Page(
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.SizedBox(height: 10),
+            pw.Text('Produk: ${record['name']}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Lokasi: ${record['region']}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Nilai: ${formatRupiah(record['amount'])}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Tanggal: ${record['date']}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Jatuh Tempo: ${record['time']}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Pembayaran Via: ${record['payment']}', style: pw.TextStyle(fontSize: 10)),
+            pw.Text('Agent: ${record['cashier']}', style: pw.TextStyle(fontSize: 10)),
+            pw.SizedBox(height: 20),
+          ],
+        );
+      },
+    ));
+    await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+  }
+
+  Future<void> generatePriceUpdateReport(BuildContext context) async {
+    final DateTimeRange? dateRange = await showDateRangePicker(
+      context: context,
+      initialDateRange: null,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (dateRange != null) {
+      final startDate = dateRange.start;
+      final endDate = dateRange.end;
+      final snapshot = await _database.child('records_tagihan').get();
+      if (snapshot.exists) {
+        final allRecords = Map<String, dynamic>.from(snapshot.value as Map);
+        final filteredRecords = allRecords.entries.where((entry) {
+          final recordDate = DateFormat('dd-MM-yyyy').parse(entry.value['date']);
+          return recordDate.isAfter(startDate.subtract(Duration(days: 1))) &&
+              recordDate.isBefore(endDate.add(Duration(days: 1)));
+        }).toList();
+
+        if (filteredRecords.isNotEmpty) {
+          final pdf = pw.Document();
+          int totalDonatur = filteredRecords.length;
+          final totalUang = filteredRecords.fold(0, (sum, entry) {
+            final record = Map<String, dynamic>.from(entry.value);
+            final amount = int.tryParse(record['amount'].replaceAll('.', '')) ?? 0;
+            return sum + amount;
+          });
+
+          pdf.addPage(
+            pw.Page(
+              build: (pw.Context context) {
+                return pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Laporan Tagihan', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Periode: ${DateFormat('dd-MM-yyyy').format(startDate)} - ${DateFormat('dd-MM-yyyy').format(endDate)}'),
+                    pw.SizedBox(height: 10),
+                    pw.Table(
+                      border: pw.TableBorder.all(),
+                      columnWidths: {
+                        0: pw.FlexColumnWidth(0.5),
+                        1: pw.FlexColumnWidth(1.5),
+                        2: pw.FlexColumnWidth(1),
+                        3: pw.FlexColumnWidth(1.5),
+                        4: pw.FlexColumnWidth(1.25),
+                        5: pw.FlexColumnWidth(1.25),
+                        6: pw.FlexColumnWidth(1.5),
+                      },
+                      children: [
+                        pw.TableRow(
+                          children: [
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('No')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Produk')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Lokasi')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Nilai')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Tanggal')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Pembayaran Via')),
+                            pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text('Agent')),
+                          ],
+                        ),
+                        ...filteredRecords.map((entry) {
+                          final record = Map<String, dynamic>.from(entry.value);
+                          return pw.TableRow(
+                            children: [
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text((filteredRecords.indexOf(entry) + 1).toString())),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['name'] ?? '-')),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['region'] ?? '-')),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(formatRupiah(record['amount'] ?? '0'))),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['date'] ?? '-')),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['payment'] ?? '-')),
+                              pw.Padding(padding: pw.EdgeInsets.all(4), child: pw.Text(record['cashier'] ?? '-')),
+                            ],
+                          );
+                        }),
+                      ],
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Text('Jumlah Transaksi: $totalDonatur', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('Total Tagihan: ${formatRupiah(totalUang.toString())}', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                  ],
+                );
+              },
+            ),
+          );
+          await Printing.layoutPdf(onLayout: (format) async => pdf.save());
+        }
+      }
+    }
+  }
+
+  void _deleteRecord(String key) {
+    _database.child('records_tagihan').child(key).remove().then((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Record deleted successfully')),
+      );
+    }).catchError((error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting record: $error')),
+      );
+    });
+  }
+
+  void _editRecord(Map<String, dynamic> record, String key) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PriceUpdateFormPage(
+          record: record,
+          editingKey: key,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _resetDatabase() async {
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: Text('Reset Database'),
+        content: Text('Are you sure you want to reset the database? All data will be lost.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _database.child('records_tagihan').remove();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Database has been reset')),
+      );
+      setState(() {});
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Daftar Tagihan', style: TextStyle(fontSize: 16)),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.print),
+            onPressed: () => generatePriceUpdateReport(context),
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            tooltip: 'Reset Database',
+            onPressed: _resetDatabase,
+          ),
+        ],
+      ),
+      body: StreamBuilder(
+        stream: _database.child('records_tagihan').onValue,
+        builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+            final records = Map<String, dynamic>.from(snapshot.data!.snapshot.value as Map);
+            if (records.isEmpty) {
+              return Center(child: Text('Belum ada data', style: TextStyle(fontSize: 16)));
+            }
+            return ListView.builder(
+              physics: AlwaysScrollableScrollPhysics(),
+              itemCount: records.keys.length,
+              itemBuilder: (context, index) {
+                final key = records.keys.elementAt(index);
+                final record = Map<String, dynamic>.from(records[key]);
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  elevation: 2,
+                  child: ListTile(
+                    contentPadding: EdgeInsets.all(10.0),
+                    title: Text(
+                      '${record['name']} - ${record['region']}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('No Produk: ${record['sku']}'),
+                        Text('Nilai: ${formatRupiah(record['amount'])}'),
+                        Text('Tanggal: ${record['date']}'),
+                        Text('Jatuh Tempo: ${record['time']}'),
+                        Text('Pembayaran: ${record['payment']}'),
+                        Text('Agent: ${record['cashier']}'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _editRecord(record, key),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteRecord(key),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.print, color: Colors.green),
+                          onPressed: () => _generateTransactionPDF(record),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          } else {
+            return Center(child: Text('Belum ada data', style: TextStyle(fontSize: 16)));
+          }
+        },
+      ),
+    );
+  }
+}
