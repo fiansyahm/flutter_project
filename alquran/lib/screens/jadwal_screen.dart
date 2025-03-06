@@ -65,7 +65,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
       Jadwal result = await jadwalService.getJadwal(cityId);
       setState(() {
         jadwal = result;
-        selectedCity = cityName; // Update with actual city name
+        selectedCity = cityName; // Update with cleaned city name
         isLoading = false;
       });
     } catch (e) {
@@ -79,7 +79,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
     }
   }
 
-  // Get city name from coordinates using geocoding
+  // Get city name from coordinates using geocoding and remove prefixes
   Future<String> getCityName() async {
     try {
       Position position = await Geolocator.getCurrentPosition(
@@ -89,9 +89,13 @@ class _JadwalScreenState extends State<JadwalScreen> {
           position.latitude, position.longitude);
 
       if (placemarks.isNotEmpty) {
-        // Use subAdministrativeArea for city name (e.g., Tulungagung)
+        // Use subAdministrativeArea for city name and remove "Kabupaten" or "Kota"
         String? city = placemarks.first.subAdministrativeArea;
-        return city != null && city.isNotEmpty ? city : 'Unknown City';
+        if (city != null && city.isNotEmpty) {
+          city = city.replaceAll('Kabupaten ', '').replaceAll('Kota ', '');
+          return city;
+        }
+        return 'Unknown City';
       } else {
         return 'City not found';
       }
