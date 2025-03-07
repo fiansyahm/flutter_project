@@ -30,10 +30,21 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
 
   // Calculate Juz number (simplified for demo purposes)
   String _getJuzNumber() {
-    // Simplified logic: Juz 1 includes Surah 1 (Al-Fatihah) to Surah 2 (Al-Baqarah) up to a certain ayah
-    // In a real app, use a more precise mapping of ayahs to Juz
     return widget.surah.number <= 2 ? 'JUZ 1' : 'JUZ ${widget.surah.number ~/ 4 + 1}';
   }
+
+  // Helper method to map revelation type to Indonesian names
+  String _mapRevelationType(String revelationType) {
+    if (revelationType.toLowerCase() == 'meccan') {
+      return 'Mekkah';
+    } else if (revelationType.toLowerCase() == 'medinan') {
+      return 'Madinah';
+    }
+    return revelationType; // Fallback for unexpected values
+  }
+
+  // Define the darker green color
+  static const Color darkGreen = Color(0xFF00695C); // A darker shade of green (teal-like)
 
   @override
   Widget build(BuildContext context) {
@@ -42,15 +53,25 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(_getJuzNumber()),
-            Text(widget.surah.name, style: TextStyle(fontFamily: 'Arabic', fontSize: 20)),
-            Text('${widget.surah.number}. ${widget.surah.englishName}'),
+            Text(
+              _getJuzNumber(),
+              style: TextStyle(color: Colors.white),
+            ),
+            Text(
+              widget.surah.name,
+              style: TextStyle(fontFamily: 'Arabic', fontSize: 20, color: Colors.white),
+            ),
+            Text(
+              '${widget.surah.number}. ${widget.surah.englishName}',
+              style: TextStyle(color: Colors.white),
+            ),
           ],
         ),
         centerTitle: true,
+        backgroundColor: darkGreen, // Darker green for app bar
         actions: [
           IconButton(
-            icon: Icon(Icons.arrow_drop_down),
+            icon: Icon(Icons.arrow_drop_down, color: Colors.white),
             onPressed: () {
               // Add functionality for dropdown if needed
             },
@@ -67,12 +88,12 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  widget.surah.revelationType, // e.g., "Mekah"
+                  _mapRevelationType(widget.surah.revelationType),
                   style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
                 Text(
-                  widget.surah.englishName, // e.g., "Pembukaan"
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  widget.surah.englishName,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
                 Text(
                   '${widget.surah.numberOfAyahs} Ayat',
@@ -89,17 +110,23 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(
                     child: SpinKitFadingCircle(
-                      color: Colors.blue,
+                      color: darkGreen, // Use darker green for loading spinner
                       size: 50.0,
                     ),
                   );
                 } else if (snapshot.hasError) {
                   return Center(
-                    child: Text('Error: ${snapshot.error}'),
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: darkGreen), // Use darker green for error text
+                    ),
                   );
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
-                    child: Text('Tidak ada data ayat'),
+                    child: Text(
+                      'Tidak ada data ayat',
+                      style: TextStyle(color: darkGreen), // Use darker green for no data text
+                    ),
                   );
                 } else {
                   List<Ayat> ayatList = snapshot.data!;
@@ -120,13 +147,13 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                 children: [
                                   Icon(
                                     Icons.star_border,
-                                    color: Colors.brown,
+                                    color: darkGreen, // Use darker green for star icon
                                     size: 40,
                                   ),
                                   Text(
                                     '${ayat.nomor}',
                                     style: TextStyle(
-                                      color: Colors.brown,
+                                      color: darkGreen, // Use darker green for number
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -145,8 +172,8 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                     ayat.ar,
                                     style: TextStyle(
                                       fontSize: 24,
-                                      fontFamily: 'Arabic', // Use an Arabic font
-                                      color: Colors.black,
+                                      fontFamily: 'Arabic',
+                                      color: Colors.black, // Keep Arabic text black for readability
                                     ),
                                     textDirection: TextDirection.rtl,
                                     textAlign: TextAlign.right,
@@ -157,7 +184,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                     _removeHtmlTags(ayat.tr),
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.blue,
+                                      color: darkGreen, // Use darker green for transliterasi
                                     ),
                                     textAlign: TextAlign.right,
                                   ),
@@ -167,7 +194,7 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                     ayat.idn,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.black,
+                                      color: Colors.black, // Keep translation black for readability
                                     ),
                                     textAlign: TextAlign.left,
                                   ),
@@ -176,11 +203,11 @@ class _SurahDetailScreenState extends State<SurahDetailScreen> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(Icons.star, size: 10, color: Colors.brown),
+                                      Icon(Icons.star, size: 10, color: darkGreen), // Use darker green for separator
                                       SizedBox(width: 8),
-                                      Icon(Icons.star, size: 10, color: Colors.brown),
+                                      Icon(Icons.star, size: 10, color: darkGreen),
                                       SizedBox(width: 8),
-                                      Icon(Icons.star, size: 10, color: Colors.brown),
+                                      Icon(Icons.star, size: 10, color: darkGreen),
                                     ],
                                   ),
                                 ],

@@ -19,22 +19,36 @@ class _QuranScreenState extends State<QuranScreen> {
     futureSurahs = quranService.getSurahs();
   }
 
+  // Helper method to map revelation type to Indonesian names
+  String _mapRevelationType(String revelationType) {
+    if (revelationType.toLowerCase() == 'meccan') {
+      return 'Mekkah';
+    } else if (revelationType.toLowerCase() == 'medinan') {
+      return 'Madinah';
+    }
+    return revelationType; // Fallback for unexpected values
+  }
+
+  // Define the darker green color
+  static const Color darkGreen = Color(0xFF00695C); // A darker shade of green (teal-like)
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Al-Quran Indonesia'),
+        title: Text('Yuk Ngaji'),
         centerTitle: true,
+        backgroundColor: darkGreen, // Darker green for app bar
         actions: [
-          TextButton(
-            onPressed: () {
-              // Add functionality for JUZ button if needed
-            },
-            child: Text(
-              'JUZ',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
+          // TextButton(
+          //   onPressed: () {
+          //     // Add functionality for JUZ button if needed
+          //   },
+          //   child: Text(
+          //     'JUZ',
+          //     style: TextStyle(color: Colors.white),
+          //   ),
+          // ),
         ],
       ),
       body: FutureBuilder<List<Surah>>(
@@ -43,17 +57,23 @@ class _QuranScreenState extends State<QuranScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(
               child: SpinKitFadingCircle(
-                color: Colors.blue,
+                color: darkGreen, // Use darker green for loading spinner
                 size: 50.0,
               ),
             );
           } else if (snapshot.hasError) {
             return Center(
-              child: Text('Error: ${snapshot.error}'),
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: TextStyle(color: darkGreen), // Use darker green for error text
+              ),
             );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(
-              child: Text('Tidak ada data'),
+              child: Text(
+                'Tidak ada data',
+                style: TextStyle(color: darkGreen), // Use darker green for no data text
+              ),
             );
           } else {
             List<Surah> surahs = snapshot.data!;
@@ -65,6 +85,7 @@ class _QuranScreenState extends State<QuranScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
                   child: Card(
                     elevation: 2,
+                    color: Colors.white, // Keep card background white for contrast
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: Colors.transparent,
@@ -73,13 +94,13 @@ class _QuranScreenState extends State<QuranScreen> {
                           children: [
                             Icon(
                               Icons.star_border,
-                              color: Colors.brown,
+                              color: darkGreen, // Use darker green for star icon
                               size: 40,
                             ),
                             Text(
                               '${surah.number}',
                               style: TextStyle(
-                                color: Colors.brown,
+                                color: darkGreen, // Use darker green for number
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -99,11 +120,12 @@ class _QuranScreenState extends State<QuranScreen> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16,
+                                    color: Colors.black, // Keep text black for readability
                                   ),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
-                                  '${surah.revelationType.toUpperCase()} | ${surah.numberOfAyahs} AYAT',
+                                  '${_mapRevelationType(surah.revelationType).toUpperCase()} | ${surah.numberOfAyahs} AYAT',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
@@ -117,14 +139,14 @@ class _QuranScreenState extends State<QuranScreen> {
                             style: TextStyle(
                               fontSize: 20,
                               fontFamily: 'Arabic', // Ensure you have an Arabic font
-                              color: Colors.black,
+                              color: Colors.black, // Keep Arabic text black for readability
                             ),
                           ),
                         ],
                       ),
                       trailing: Icon(
                         Icons.file_download,
-                        color: Colors.teal,
+                        color: darkGreen, // Use darker green for download icon
                       ),
                       onTap: () {
                         Navigator.push(

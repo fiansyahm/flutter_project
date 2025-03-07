@@ -30,6 +30,18 @@ class _JadwalScreenState extends State<JadwalScreen> {
   double? qiblaDirection;
   Position? currentPosition;
 
+  // Track notification settings for each prayer
+  Map<String, String> notificationSettings = {
+    'Imsak': 'Nonaktif',
+    'Subuh': 'Nonaktif',
+    'Terbit': 'Nonaktif',
+    'Dhuha': 'Nonaktif',
+    'Dzuhur': 'Nonaktif',
+    'Ashar': 'Nonaktif',
+    'Maghrib': 'Nonaktif',
+    'Isya': 'Nonaktif',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -70,7 +82,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
       _calculateQiblaDirection(currentPosition!.latitude, currentPosition!.longitude);
       setState(() {
         jadwal = result;
-        selectedCity = cityName; // Update with cleaned city name
+        selectedCity = cityName;
         isLoading = false;
       });
     } catch (e) {
@@ -114,9 +126,9 @@ class _JadwalScreenState extends State<JadwalScreen> {
       List<City> result = await jadwalService.getCities(cityName);
       if (result.isNotEmpty) {
         setState(() {
-          selectedCity = result[0].lokasi; // Update with precise city name from API
+          selectedCity = result[0].lokasi;
         });
-        return result[0].id; // Return the first matching city's ID
+        return result[0].id;
       } else {
         setState(() {
           selectedCity = 'Jakarta (Fallback)';
@@ -180,13 +192,24 @@ class _JadwalScreenState extends State<JadwalScreen> {
         }
 
         setState(() {});
-        _startPrayerCountdown(); // Recursive call to update every second
+        _startPrayerCountdown();
       }
     });
   }
 
   // Schedule notification for prayer time using zonedSchedule
-  Future<void> _scheduleNotification(String prayerName, String time) async {
+  Future<void> _scheduleNotification(String prayerName, String time, String soundOption) async {
+    if (soundOption == 'Nonaktif') {
+      await flutterLocalNotificationsPlugin.cancel(prayerName.hashCode);
+      setState(() {
+        notificationSettings[prayerName] = soundOption;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Notifikasi untuk $prayerName dinonaktifkan')),
+      );
+      return;
+    }
+
     DateFormat timeFormat = DateFormat('HH:mm');
     tz.TZDateTime now = tz.TZDateTime.now(jakartaTimezone);
     DateTime prayerTime = timeFormat.parse(time);
@@ -200,17 +223,37 @@ class _JadwalScreenState extends State<JadwalScreen> {
     );
 
     if (scheduledDateTime.isBefore(now)) {
-      scheduledDateTime = scheduledDateTime.add(Duration(days: 1)); // Schedule for next day
+      scheduledDateTime = scheduledDateTime.add(Duration(days: 1));
     }
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    String? soundPath;
+    switch (soundOption) {
+      case 'Suara Adzan':
+        soundPath = 'adzan';
+        break;
+      case 'Suara Standard Alarm':
+        soundPath = 'alarm';
+        break;
+      case 'Suara Standard Notifikasi':
+        soundPath = 'notification';
+        break;
+      case 'Tanpa Suara (Notif Saja)':
+        soundPath = null;
+        break;
+      default:
+        soundPath = null;
+    }
+
+    AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'prayer_channel',
       'Prayer Notifications',
       channelDescription: 'Notifications for prayer times',
       importance: Importance.max,
       priority: Priority.high,
+      sound: soundPath != null ? RawResourceAndroidNotificationSound(soundPath) : null,
+      playSound: soundPath != null,
     );
-    const NotificationDetails notificationDetails = NotificationDetails(android: androidDetails);
+    NotificationDetails notificationDetails = NotificationDetails(android: androidDetails);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       prayerName.hashCode,
@@ -222,8 +265,12 @@ class _JadwalScreenState extends State<JadwalScreen> {
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
 
+    setState(() {
+      notificationSettings[prayerName] = soundOption;
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Notifikasi untuk $prayerName telah diset')),
+      SnackBar(content: Text('Notifikasi untuk $prayerName telah diset dengan $soundOption')),
     );
   }
 
@@ -341,10 +388,10 @@ class _JadwalScreenState extends State<JadwalScreen> {
 
   // Calculate Qibla direction
   void _calculateQiblaDirection(double lat, double lon) {
-    const double kaabaLat = 21.4225; // Latitude of Kaaba
-    const double kaabaLon = 39.8262; // Longitude of Kaaba
+    const double kaabaLat = 21.4225;
+    const double kaabaLon = 39.8262;
 
-    double lat1 = lat * pi / 180; // Convert to radians
+    double lat1 = lat * pi / 180;
     double lon1 = lon * pi / 180;
     double lat2 = kaabaLat * pi / 180;
     double lon2 = kaabaLon * pi / 180;
@@ -354,27 +401,36 @@ class _JadwalScreenState extends State<JadwalScreen> {
     double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
     double bearing = atan2(y, x);
 
-    bearing = bearing * 180 / pi; // Convert back to degrees
-    bearing = (bearing + 360) % 360; // Normalize to 0-360 degrees
+    bearing = bearing * 180 / pi;
+    bearing = (bearing + 360) % 360;
 
     setState(() {
       qiblaDirection = bearing;
     });
   }
 
+  // Define the darker green color
+  static const Color darkGreen = Color(0xFF00695C);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Jadwal Sholat'),
+        title: Text('Jadwal Sholat', style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        backgroundColor: darkGreen,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: isLoading
-            ? Center(child: CircularProgressIndicator())
+            ? Center(child: CircularProgressIndicator(color: darkGreen))
             : jadwal == null
-            ? Center(child: Text('Memuat jadwal berdasarkan lokasi...', style: TextStyle(fontSize: 16)))
+            ? Center(
+          child: Text(
+            'Memuat jadwal berdasarkan lokasi...',
+            style: TextStyle(fontSize: 16, color: darkGreen),
+          ),
+        )
             : Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -387,12 +443,16 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   children: [
                     Text(
                       'Tanggal Hijriah',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: darkGreen,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
-                      '1 Muharram 1446', // Replace with actual Hijri date API if available
-                      style: TextStyle(fontSize: 14),
+                      '1 Muharram 1446',
+                      style: TextStyle(fontSize: 14, color: Colors.black),
                     ),
                   ],
                 ),
@@ -401,12 +461,16 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   children: [
                     Text(
                       'Tanggal Masehi',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: darkGreen,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       jadwal!.tanggal,
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14, color: Colors.black),
                     ),
                   ],
                 ),
@@ -420,7 +484,11 @@ class _JadwalScreenState extends State<JadwalScreen> {
                 children: [
                   Text(
                     _getNearestPrayerStatus(),
-                    style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      color: darkGreen,
+                    ),
                   ),
                   SizedBox(height: 4),
                   Text(
@@ -430,14 +498,14 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   SizedBox(height: 8),
                   Text(
                     'Lokasi: $selectedCity',
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 14, color: Colors.black),
                   ),
                   SizedBox(height: 8),
                   Text(
                     qiblaDirection != null
                         ? 'Arah Kiblat: ${qiblaDirection!.toStringAsFixed(1)}° dari Utara'
                         : 'Menghitung arah Kiblat...',
-                    style: TextStyle(fontSize: 14, color: Colors.blue),
+                    style: TextStyle(fontSize: 14, color: darkGreen),
                   ),
                 ],
               ),
@@ -446,14 +514,54 @@ class _JadwalScreenState extends State<JadwalScreen> {
             Expanded(
               child: ListView(
                 children: [
-                  PrayerTimeTile('Imsak', jadwal!.imsak, _scheduleNotification),
-                  PrayerTimeTile('Subuh', jadwal!.subuh, _scheduleNotification),
-                  PrayerTimeTile('Terbit', jadwal!.terbit, _scheduleNotification),
-                  PrayerTimeTile('Dhuha', jadwal!.dhuha, _scheduleNotification),
-                  PrayerTimeTile('Dzuhur', jadwal!.dzuhur, _scheduleNotification),
-                  PrayerTimeTile('Ashar', jadwal!.ashar, _scheduleNotification),
-                  PrayerTimeTile('Maghrib', jadwal!.maghrib, _scheduleNotification),
-                  PrayerTimeTile('Isya', jadwal!.isya, _scheduleNotification),
+                  PrayerTimeTile(
+                    'Imsak',
+                    jadwal!.imsak,
+                    notificationSettings['Imsak']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Subuh',
+                    jadwal!.subuh,
+                    notificationSettings['Subuh']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Terbit',
+                    jadwal!.terbit,
+                    notificationSettings['Terbit']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Dhuha',
+                    jadwal!.dhuha,
+                    notificationSettings['Dhuha']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Dzuhur',
+                    jadwal!.dzuhur,
+                    notificationSettings['Dzuhur']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Ashar',
+                    jadwal!.ashar,
+                    notificationSettings['Ashar']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Maghrib',
+                    jadwal!.maghrib,
+                    notificationSettings['Maghrib']!,
+                    _scheduleNotification,
+                  ),
+                  PrayerTimeTile(
+                    'Isya',
+                    jadwal!.isya,
+                    notificationSettings['Isya']!,
+                    _scheduleNotification,
+                  ),
                 ],
               ),
             ),
@@ -466,12 +574,16 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   children: [
                     Text(
                       'Menuju Waktu $nextPrayerName',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: darkGreen,
+                      ),
                     ),
                     SizedBox(height: 8),
                     Text(
                       '+${timeUntilNextPrayer!.inMinutes} menit lagi',
-                      style: TextStyle(fontSize: 16, color: Colors.green),
+                      style: TextStyle(fontSize: 16, color: darkGreen),
                     ),
                   ],
                 ),
@@ -487,20 +599,98 @@ class _JadwalScreenState extends State<JadwalScreen> {
 class PrayerTimeTile extends StatelessWidget {
   final String prayerName;
   final String time;
-  final Function(String, String) onNotificationSet;
+  final String notificationSetting;
+  final Function(String, String, String) onNotificationSet;
 
-  PrayerTimeTile(this.prayerName, this.time, this.onNotificationSet);
+  PrayerTimeTile(this.prayerName, this.time, this.notificationSetting, this.onNotificationSet);
+
+  static const Color darkGreen = Color(0xFF00695C);
+
+  void _showNotificationOptions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Pilih Suara Notifikasi untuk $prayerName', style: TextStyle(color: darkGreen)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: Text('Suara Adzan'),
+                  onTap: () {
+                    onNotificationSet(prayerName, time, 'Suara Adzan');
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: Text('Suara Standard Alarm'),
+                  onTap: () {
+                    onNotificationSet(prayerName, time, 'Suara Standard Alarm');
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: Text('Suara Standard Notifikasi'),
+                  onTap: () {
+                    onNotificationSet(prayerName, time, 'Suara Standard Notifikasi');
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: Text('Tanpa Suara (Notif Saja)'),
+                  onTap: () {
+                    onNotificationSet(prayerName, time, 'Tanpa Suara (Notif Saja)');
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  title: Text('Nonaktif'),
+                  onTap: () {
+                    onNotificationSet(prayerName, time, 'Nonaktif');
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    bool isNotificationActive = notificationSetting != 'Nonaktif';
     return Card(
       margin: EdgeInsets.symmetric(vertical: 4.0),
+      color: Colors.white,
       child: ListTile(
-        title: Text(prayerName, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(time),
+        title: Text(
+          prayerName,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: darkGreen,
+          ),
+        ),
+        subtitle: Text(time, style: TextStyle(color: Colors.black)),
         trailing: IconButton(
-          icon: Icon(Icons.notifications, color: Colors.blue),
-          onPressed: () => onNotificationSet(prayerName, time),
+          icon: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                Icons.access_time,
+                color: darkGreen,
+                size: 28,
+              ),
+              Icon(
+                isNotificationActive ? Icons.check : Icons.close,
+                color: isNotificationActive ? Colors.green : Colors.red,
+                size: 16,
+              ),
+            ],
+          ),
+          onPressed: () => _showNotificationOptions(context),
         ),
       ),
     );
