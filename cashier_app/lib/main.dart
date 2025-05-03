@@ -1,30 +1,21 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'screens/home_page.dart';
+import 'db/database_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper.instance.init(); // Initialize Hive
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Aplikasi Kasir',
-      theme: ThemeData(
-        primarySwatch: Colors.yellow,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.yellow,
-          foregroundColor: Colors.black,
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.yellow,
-          foregroundColor: Colors.black,
-        ),
-      ),
+      title: 'Karen Cashier',
+      theme: ThemeData(primarySwatch: Colors.yellow),
       home: const HomePage(),
     );
   }

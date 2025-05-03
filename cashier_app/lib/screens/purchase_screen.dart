@@ -4,8 +4,7 @@ import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../db/database_helper.dart';
-import '../models/product.dart';
-import '../models/purchase_transaction.dart';
+import '../db/adapters.dart'; // Import Product and PurchaseTransaction from adapters.dart
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({super.key});
@@ -48,15 +47,15 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     });
   }
 
-  void _addToCart(Product product) {
+  void _addToCart(Product product, int quantity) {
     setState(() {
       final existingItemIndex = _cart.indexWhere((item) => item['product'].id == product.id);
       if (existingItemIndex != -1) {
-        _cart[existingItemIndex]['quantity']++;
+        _cart[existingItemIndex]['quantity'] += quantity;
       } else {
         _cart.add({
           'product': product,
-          'quantity': 1,
+          'quantity': quantity,
         });
       }
     });
@@ -146,17 +145,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 ElevatedButton(
                   onPressed: () {
                     if (selectedProduct != null) {
-                      setState(() {
-                        final existingItemIndex = _cart.indexWhere((item) => item['product'].id == selectedProduct!.id);
-                        if (existingItemIndex != -1) {
-                          _cart[existingItemIndex]['quantity'] += quantity;
-                        } else {
-                          _cart.add({
-                            'product': selectedProduct!,
-                            'quantity': quantity,
-                          });
-                        }
-                      });
+                      _addToCart(selectedProduct!, quantity);
                       Navigator.pop(context);
                     }
                   },
@@ -246,8 +235,13 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                             }
 
                             // Calculate discount and tax
-                            int discountAmount = (total * _discount) ~/ 100;
-                            int taxAmount = (total * _tax) ~/ 100;
+                            int subtotal = _cart.fold<int>(0, (sum, item) {
+                              final product = item['product'] as Product;
+                              final quantity = item['quantity'] as int;
+                              return sum + (product.sellingPrice * quantity);
+                            });
+                            int discountAmount = (subtotal * _discount) ~/ 100;
+                            int taxAmount = (subtotal * _tax) ~/ 100;
 
                             // Save transaction
                             await dbHelper.insertTransaction(
@@ -256,7 +250,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                                   'name': item['product'].name,
                                   'quantity': item['quantity'],
                                   'price': item['product'].sellingPrice,
-                                  'purchasePrice': item['product'].purchasePrice, // Ensure this is included
+                                  'purchasePrice': item['product'].purchasePrice,
                                 }).toList()),
                                 total: total,
                                 paymentMethod: _paymentMethod,

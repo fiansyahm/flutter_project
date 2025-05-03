@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'product_screen.dart';
 import 'purchase_screen.dart';
-import 'sales_recap_screen.dart'; // Add this import
+import 'sales_recap_screen.dart';
+import 'stock_management_screen.dart';
+import 'category_screen.dart'; // Import the new CategoryScreen
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -10,7 +12,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Aplikasi Kasir'),
+        title: const Text('Karen Cashier'),
         backgroundColor: Colors.yellow[700],
         foregroundColor: Colors.black,
       ),
@@ -37,8 +39,9 @@ class HomePage extends StatelessWidget {
               icon: Icons.category,
               label: 'Kategori Barang',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fitur Kategori Barang - Segera Hadir')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CategoryScreen()),
                 );
               },
             ),
@@ -47,8 +50,9 @@ class HomePage extends StatelessWidget {
               icon: Icons.inventory,
               label: 'Manajemen Stok',
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Fitur Manajemen Stok - Segera Hadir')),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const StockManagementScreen()),
                 );
               },
             ),

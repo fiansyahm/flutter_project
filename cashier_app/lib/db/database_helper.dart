@@ -1,112 +1,101 @@
-// db/database_helper.dart
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import '../models/product.dart';
-import '../models/purchase_transaction.dart'; // Update the import
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'adapters.dart'; // Import Product, PurchaseTransaction, and Category from adapters.dart
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
-  static Database? _database;
+  static late Box<Product> _productBox;
+  static late Box<PurchaseTransaction> _transactionBox;
+  static late Box<Category> _categoryBox;
 
   DatabaseHelper._init();
 
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDB('cashier.db');
-    return _database!;
-  }
+  Future<void> init() async {
+    await Hive.initFlutter();
 
-  Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    // Register adapters
+    Hive.registerAdapter(ProductAdapter());
+    Hive.registerAdapter(PurchaseTransactionAdapter());
+    Hive.registerAdapter(CategoryAdapter());
 
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
-  }
-
-  Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        stock INTEGER,
-        sku TEXT,
-        purchasePrice INTEGER,
-        sellingPrice INTEGER,
-        category TEXT
-      )
-    ''');
-
-    await db.execute('''
-      CREATE TABLE transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        items TEXT,
-        total INTEGER,
-        paymentMethod TEXT,
-        cashier TEXT,
-        supplier TEXT,
-        discount INTEGER,
-        tax INTEGER,
-        date TEXT
-      )
-    ''');
+    _productBox = await Hive.openBox<Product>('productsBox');
+    _transactionBox = await Hive.openBox<PurchaseTransaction>('transactionsBox');
+    _categoryBox = await Hive.openBox<Category>('categoriesBox');
   }
 
   // Product Methods
   Future<int> insertProduct(Product product) async {
-    final db = await database;
-    return await db.insert('products', product.toMap());
+    final key = await _productBox.add(product);
+    product.id = key;
+    await _productBox.put(key, product);
+    return key;
   }
 
   Future<List<Product>> getProducts() async {
-    final db = await database;
-    final maps = await db.query('products');
-    return maps.map((map) => Product.fromMap(map)).toList();
+    return _productBox.values.toList();
   }
 
-  Future<int> updateProduct(Product product) async {
-    final db = await database;
-    return await db.update(
-      'products',
-      product.toMap(),
-      where: 'id = ?',
-      whereArgs: [product.id],
-    );
+  Future<void> updateProduct(Product product) async {
+    if (product.id != null) {
+      await _productBox.put(product.id!, product);
+    }
   }
 
-  Future<int> deleteProduct(int id) async {
-    final db = await database;
-    return await db.delete(
-      'products',
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  Future<void> deleteProduct(int id) async {
+    await _productBox.delete(id);
   }
 
-  Future<int> updateStock(int id, int newStock) async {
-    final db = await database;
-    return await db.update(
-      'products',
-      {'stock': newStock},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+  Future<void> updateStock(int id, int newStock) async {
+    final product = _productBox.get(id);
+    if (product != null) {
+      product.stock = newStock;
+      await _productBox.put(id, product);
+    }
   }
 
   // Transaction Methods
-  Future<int> insertTransaction(PurchaseTransaction transaction) async { // Update the type
-    final db = await database;
-    return await db.insert('transactions', transaction.toMap());
-  }
-
-  Future<void> close() async {
-    final db = await database;
-    db.close();
+  Future<int> insertTransaction(PurchaseTransaction transaction) async {
+    final key = await _transactionBox.add(transaction);
+    transaction.id = key;
+    await _transactionBox.put(key, transaction);
+    return key;
   }
 
   Future<List<PurchaseTransaction>> getTransactions() async {
-    final db = await database;
-    final maps = await db.query('transactions');
-    return maps.map((map) => PurchaseTransaction.fromMap(map)).toList();
+    return _transactionBox.values.toList();
   }
 
+  // Category Methods
+  Future<int> insertCategory(Category category) async {
+    final key = await _categoryBox.add(category);
+    category.id = key;
+    await _categoryBox.put(key, category);
+    return key;
+  }
+
+  Future<List<Category>> getCategories() async {
+    return _categoryBox.values.toList();
+  }
+
+  Future<void> updateCategory(Category category) async {
+    if (category.id != null) {
+      await _categoryBox.put(category.id!, category);
+    }
+  }
+
+  Future<void> deleteCategory(int id) async {
+    // Check if any products are using this category
+    final category = _categoryBox.get(id);
+    if (category != null) {
+      final productsUsingCategory = _productBox.values.where((product) => product.category == category.name).toList();
+      if (productsUsingCategory.isNotEmpty) {
+        throw Exception('Cannot delete category "${category.name}" because it is used by ${productsUsingCategory.length} product(s).');
+      }
+      await _categoryBox.delete(id);
+    }
+  }
+
+  Future<void> close() async {
+    await Hive.close();
+  }
 }
