@@ -3,20 +3,61 @@ import 'product_screen.dart';
 import 'purchase_screen.dart';
 import 'sales_recap_screen.dart';
 import 'stock_management_screen.dart';
-import 'category_screen.dart'; // Import the new CategoryScreen
+import 'category_screen.dart';
+import 'profile_store_screen.dart';
+import 'cashier_management_screen.dart';
+import '../db/database_helper.dart';
+import '../db/adapters.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String? _storeName;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreProfile();
+  }
+
+  void _loadStoreProfile() async {
+    final profile = await DatabaseHelper.instance.getStoreProfile();
+    setState(() {
+      _storeName = profile?.storeName ?? 'Aplikasi Kasir'; // Generic fallback
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Karen Cashier'),
+        title: _isLoading ? const Text('Memuat...') : Text(_storeName ?? 'Aplikasi Kasir'),
         backgroundColor: Colors.yellow[700],
         foregroundColor: Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileStoreScreen()),
+              ).then((_) {
+                _loadStoreProfile(); // Refresh store name after editing
+              });
+            },
+          ),
+        ],
       ),
-      body: Padding(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Padding(
         padding: const EdgeInsets.all(16.0),
         child: GridView.count(
           crossAxisCount: 2,
@@ -75,6 +116,17 @@ class HomePage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SalesRecapScreen()),
+                );
+              },
+            ),
+            _buildFeatureButton(
+              context,
+              icon: Icons.person,
+              label: 'Manajemen Kasir',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CashierManagementScreen()),
                 );
               },
             ),

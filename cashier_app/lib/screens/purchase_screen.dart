@@ -4,7 +4,7 @@ import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../db/database_helper.dart';
-import '../db/adapters.dart'; // Import Product and PurchaseTransaction from adapters.dart
+import '../db/adapters.dart'; // Import Product, PurchaseTransaction, and Cashier from adapters.dart
 
 class PurchaseScreen extends StatefulWidget {
   const PurchaseScreen({super.key});
@@ -16,27 +16,30 @@ class PurchaseScreen extends StatefulWidget {
 class _PurchaseScreenState extends State<PurchaseScreen> {
   List<Product> _products = [];
   List<Map<String, dynamic>> _cart = [];
+  List<Cashier> _cashiers = [];
+  Cashier? _selectedCashier;
   final dbHelper = DatabaseHelper.instance;
   int _discount = 0;
   int _tax = 0;
   String _supplier = '-';
   String _paymentMethod = 'Uang Pas';
   final _noteController = TextEditingController();
-  // Controllers for dynamic inputs
-  final _storeNameController = TextEditingController(text: 'Gerai Terlaris');
-  final _cashierController = TextEditingController(text: 'Kartika');
+  final _storeNameController = TextEditingController();
+  final _newCashierController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _loadStoreProfile();
+    _loadCashiers();
   }
 
   @override
   void dispose() {
     _noteController.dispose();
     _storeNameController.dispose();
-    _cashierController.dispose();
+    _newCashierController.dispose();
     super.dispose();
   }
 
@@ -44,6 +47,23 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     final data = await dbHelper.getProducts();
     setState(() {
       _products = data;
+    });
+  }
+
+  void _loadStoreProfile() async {
+    final profile = await dbHelper.getStoreProfile();
+    setState(() {
+      _storeNameController.text = profile?.storeName ?? 'Unknown Store';
+    });
+  }
+
+  void _loadCashiers() async {
+    final cashiers = await dbHelper.getCashiers();
+    setState(() {
+      _cashiers = cashiers;
+      if (_cashiers.isNotEmpty) {
+        _selectedCashier = _cashiers.first; // Default to the first cashier
+      }
     });
   }
 
@@ -159,6 +179,47 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
     );
   }
 
+  void _showAddCashierDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Tambah Kasir'),
+          content: TextField(
+            controller: _newCashierController,
+            decoration: const InputDecoration(
+              labelText: 'Nama Kasir',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final cashierName = _newCashierController.text.trim();
+                if (cashierName.isNotEmpty) {
+                  final newCashier = Cashier(name: cashierName);
+                  await dbHelper.insertCashier(newCashier);
+                  _loadCashiers(); // Refresh the cashier list
+                  _newCashierController.clear();
+                  Navigator.pop(context);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Nama kasir tidak boleh kosong')),
+                  );
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showPaymentDialog() {
     final total = _calculateTotal();
     int cashPaid = total;
@@ -254,7 +315,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                                 }).toList()),
                                 total: total,
                                 paymentMethod: _paymentMethod,
-                                cashier: _cashierController.text.isEmpty ? 'Unknown' : _cashierController.text,
+                                cashier: _selectedCashier?.name ?? 'Unknown',
                                 supplier: _supplier,
                                 discount: discountAmount,
                                 tax: taxAmount,
@@ -317,7 +378,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
               pw.Text(
                 'Kembalian: Rp ${(cashPaid - total).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
               ),
-              pw.Text('Kasir: ${_cashierController.text.isEmpty ? 'Unknown' : _cashierController.text}'),
+              pw.Text('Kasir: ${_selectedCashier?.name ?? 'Unknown'}'),
             ],
           );
         },
@@ -362,7 +423,7 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                 Text(
                   'Kembalian: Rp ${(cashPaid - total).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
                 ),
-                Text('Kasir: ${_cashierController.text.isEmpty ? 'Unknown' : _cashierController.text}'),
+                Text('Kasir: ${_selectedCashier?.name ?? 'Unknown'}'),
                 const Divider(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -417,14 +478,34 @@ class _PurchaseScreenState extends State<PurchaseScreen> {
                     labelText: 'Nama Toko',
                     border: OutlineInputBorder(),
                   ),
+                  enabled: false, // Make it read-only since it's fetched from DB
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: _cashierController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Kasir',
-                    border: OutlineInputBorder(),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<Cashier>(
+                        hint: const Text('Pilih Kasir'),
+                        value: _selectedCashier,
+                        onChanged: (Cashier? newValue) {
+                          setState(() {
+                            _selectedCashier = newValue;
+                          });
+                        },
+                        items: _cashiers.map((Cashier cashier) {
+                          return DropdownMenuItem<Cashier>(
+                            value: cashier,
+                            child: Text(cashier.name),
+                          );
+                        }).toList(),
+                        isExpanded: true,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      onPressed: _showAddCashierDialog,
+                    ),
+                  ],
                 ),
               ],
             ),

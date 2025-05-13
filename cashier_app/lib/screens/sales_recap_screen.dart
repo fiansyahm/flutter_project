@@ -17,12 +17,14 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
   List<PurchaseTransaction> _transactions = [];
   final dbHelper = DatabaseHelper.instance;
   DateTime _selectedDate = DateTime.now();
+  String? _storeName;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadTransactions();
+    _loadStoreProfile();
   }
 
   @override
@@ -35,6 +37,13 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
     final data = await dbHelper.getTransactions();
     setState(() {
       _transactions = data;
+    });
+  }
+
+  void _loadStoreProfile() async {
+    final profile = await dbHelper.getStoreProfile();
+    setState(() {
+      _storeName = profile?.storeName ?? 'Aplikasi Kasir';
     });
   }
 
@@ -143,12 +152,17 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
         final name = item['name'] as String;
         final quantity = item['quantity'] as int;
         final price = item['price'] as int;
+        final purchasePrice = item['purchasePrice'] as int;
         final total = quantity * price;
+        final profit = (price - purchasePrice) * quantity; // Calculate profit for this item
         soldItems.add({
           'name': name,
           'quantity': quantity,
           'price': price,
           'total': total,
+          'profit': profit, // Add profit
+          'cashier': transaction.cashier, // Add cashier name
+          'storeName': _storeName, // Add store name
         });
       }
     }
@@ -269,7 +283,15 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
                         final item = soldItems[i];
                         return ListTile(
                           title: Text(item['name']),
-                          subtitle: Text('Jumlah: ${item['quantity']} x Rp ${_formatNumber(item['price'])}'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Jumlah: ${item['quantity']} x Rp ${_formatNumber(item['price'])}'),
+                              Text('Keuntungan: Rp ${_formatNumber(item['profit'])}'),
+                              Text('Kasir: ${item['cashier']}'),
+                              Text('Toko: ${item['storeName']}'),
+                            ],
+                          ),
                           trailing: Text('Total: Rp ${_formatNumber(item['total'])}'),
                         );
                       },

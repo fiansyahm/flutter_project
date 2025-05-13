@@ -157,3 +157,59 @@ class Category extends HiveObject {
     );
   }
 }
+
+@HiveType(typeId: 3)
+class StoreProfile extends HiveObject {
+  @HiveField(0)
+  int? id;
+
+  @HiveField(1)
+  String storeName;
+
+  StoreProfile({
+    this.id,
+    required this.storeName,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'storeName': storeName,
+    };
+  }
+
+  factory StoreProfile.fromMap(Map<String, dynamic> map) {
+    return StoreProfile(
+      id: map['id'],
+      storeName: map['storeName'],
+    );
+  }
+}
+
+@HiveType(typeId: 4)
+class Cashier extends HiveObject {
+  @HiveField(0)
+  int? id;
+
+  @HiveField(1)
+  String name;
+
+  Cashier({
+    this.id,
+    required this.name,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+    };
+  }
+
+  factory Cashier.fromMap(Map<String, dynamic> map) {
+    return Cashier(
+      id: map['id'],
+      name: map['name'],
+    );
+  }
+}

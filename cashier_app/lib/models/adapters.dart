@@ -157,3 +157,37 @@ class Category extends HiveObject {
     );
   }
 }
+
+class StoreProfile {
+  final int? id;
+  final String storeName;
+
+  StoreProfile({this.id, required this.storeName});
+
+  Map<String, dynamic> toMap() {
+    return {'id': id, 'storeName': storeName};
+  }
+
+  factory StoreProfile.fromMap(Map<String, dynamic> map) {
+    return StoreProfile(
+      id: map['id'],
+      storeName: map['storeName'],
+    );
+  }
+}
+
+class StoreProfileAdapter extends TypeAdapter<StoreProfile> {
+  @override
+  final int typeId = 3; // Unique ID for StoreProfile (must not conflict with other adapters)
+
+  @override
+  StoreProfile read(BinaryReader reader) {
+    final map = reader.readMap().cast<String, dynamic>();
+    return StoreProfile.fromMap(map);
+  }
+
+  @override
+  void write(BinaryWriter writer, StoreProfile obj) {
+    writer.writeMap(obj.toMap());
+  }
+}

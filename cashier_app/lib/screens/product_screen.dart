@@ -35,6 +35,51 @@ class _ProductScreenState extends State<ProductScreen> {
     });
   }
 
+  void _showAddCategoryDialog(BuildContext context, Function onCategoryAdded) {
+    final _categoryNameController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Tambah Kategori Baru'),
+        content: TextField(
+          controller: _categoryNameController,
+          decoration: const InputDecoration(labelText: 'Nama Kategori'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = _categoryNameController.text.trim();
+              if (name.isNotEmpty) {
+                try {
+                  await dbHelper.insertCategory(Category(name: name));
+                  Navigator.of(context).pop();
+                  onCategoryAdded(); // Refresh categories
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Kategori berhasil ditambahkan')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama kategori tidak boleh kosong')),
+                );
+              }
+            },
+            child: const Text('Tambah'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showForm(BuildContext context, Product? product) {
     final _nameController = TextEditingController(text: product?.name ?? '');
     final _stockController = TextEditingController(text: product?.stock.toString() ?? '');
@@ -73,24 +118,38 @@ class _ProductScreenState extends State<ProductScreen> {
                 decoration: const InputDecoration(labelText: 'Harga Jual'),
                 keyboardType: TextInputType.number,
               ),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Kategori'),
-                value: _selectedCategory,
-                items: _categories.map((Category category) {
-                  return DropdownMenuItem<String>(
-                    value: category.name,
-                    child: Text(category.name),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  _selectedCategory = newValue;
-                },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Pilih kategori';
-                  }
-                  return null;
-                },
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Kategori'),
+                      value: _selectedCategory,
+                      items: _categories.map((Category category) {
+                        return DropdownMenuItem<String>(
+                          value: category.name,
+                          child: Text(category.name),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        _selectedCategory = newValue;
+                      },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Pilih kategori';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add, color: Colors.green),
+                    onPressed: () {
+                      _showAddCategoryDialog(context, () {
+                        _loadCategories(); // Refresh categories after adding
+                      });
+                    },
+                  ),
+                ],
               ),
             ],
           ),

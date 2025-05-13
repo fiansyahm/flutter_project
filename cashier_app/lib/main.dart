@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'screens/home_page.dart';
+import 'db/adapters.dart';
+import 'screens/splash_screen.dart';
 import 'db/database_helper.dart';
 
 void main() async {
@@ -13,10 +14,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Karen Cashier',
-      theme: ThemeData(primarySwatch: Colors.yellow),
-      home: const HomePage(),
+    return const MaterialApp(
+      title: 'Karen Cashier', // Use the hardcoded name from SplashScreen
+      // theme: ThemeData(primarySwatch: Colors.yellow),
+      home: SplashScreen(),
     );
   }
 }
