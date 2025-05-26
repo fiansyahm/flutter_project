@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:barcode_scan2/barcode_scan2.dart';
 import '../db/database_helper.dart';
 import '../db/adapters.dart';
 
@@ -35,7 +37,7 @@ class _ProductScreenState extends State<ProductScreen> {
     });
   }
 
-  void _showAddCategoryDialog(BuildContext context, Function onCategoryAdded) {
+  void _showAddCategoryDialog(BuildContext context, Function(String) onCategoryAdded) {
     final _categoryNameController = TextEditingController();
 
     showDialog(
@@ -58,7 +60,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 try {
                   await dbHelper.insertCategory(Category(name: name));
                   Navigator.of(context).pop();
-                  onCategoryAdded(); // Refresh categories
+                  onCategoryAdded(name); // Pass the new category name back
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Kategori berhasil ditambahkan')),
                   );
@@ -80,131 +82,155 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  void _showForm(BuildContext context, Product? product) {
+  Future<void> _scanBarcode() async {
+    try {
+      final result = await BarcodeScanner.scan();
+      if (result.rawContent.isNotEmpty) {
+        _showForm(context, null, scannedSku: result.rawContent);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error scanning: $e')),
+      );
+    }
+  }
+
+  void _showForm(BuildContext context, Product? product, {String? scannedSku}) {
     final _nameController = TextEditingController(text: product?.name ?? '');
     final _stockController = TextEditingController(text: product?.stock.toString() ?? '');
-    final _skuController = TextEditingController(text: product?.sku ?? '');
+    final _skuController = TextEditingController(text: product?.sku ?? scannedSku ?? '');
     final _purchasePriceController = TextEditingController(text: product?.purchasePrice.toString() ?? '');
     final _sellingPriceController = TextEditingController(text: product?.sellingPrice.toString() ?? '');
     String? _selectedCategory = product?.category;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text(product == null ? 'Tambah Produk' : 'Edit Produk'),
-        content: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nama Produk'),
-              ),
-              TextField(
-                controller: _stockController,
-                decoration: const InputDecoration(labelText: 'Stok'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _skuController,
-                decoration: const InputDecoration(labelText: 'SKU'),
-              ),
-              TextField(
-                controller: _purchasePriceController,
-                decoration: const InputDecoration(labelText: 'Harga Beli'),
-                keyboardType: TextInputType.number,
-              ),
-              TextField(
-                controller: _sellingPriceController,
-                decoration: const InputDecoration(labelText: 'Harga Jual'),
-                keyboardType: TextInputType.number,
-              ),
-              Row(
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(product == null ? 'Tambah Produk' : 'Edit Produk'),
+            content: SingleChildScrollView(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Kategori'),
-                      value: _selectedCategory,
-                      items: _categories.map((Category category) {
-                        return DropdownMenuItem<String>(
-                          value: category.name,
-                          child: Text(category.name),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        _selectedCategory = newValue;
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return 'Pilih kategori';
-                        }
-                        return null;
-                      },
-                    ),
+                  TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(labelText: 'Nama Produk'),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
-                    onPressed: () {
-                      _showAddCategoryDialog(context, () {
-                        _loadCategories(); // Refresh categories after adding
-                      });
-                    },
+                  TextField(
+                    controller: _stockController,
+                    decoration: const InputDecoration(labelText: 'Stok'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: _skuController,
+                    decoration: const InputDecoration(labelText: 'SKU'),
+                  ),
+                  TextField(
+                    controller: _purchasePriceController,
+                    decoration: const InputDecoration(labelText: 'Harga Beli'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  TextField(
+                    controller: _sellingPriceController,
+                    decoration: const InputDecoration(labelText: 'Harga Jual'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: const InputDecoration(labelText: 'Kategori'),
+                          value: _selectedCategory,
+                          items: _categories.map((Category category) {
+                            return DropdownMenuItem<String>(
+                              value: category.name,
+                              child: Text(category.name),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setDialogState(() {
+                              _selectedCategory = newValue;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null) {
+                              return 'Pilih kategori';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.green),
+                        onPressed: () {
+                          _showAddCategoryDialog(context, (newCategory) {
+                            setState(() {
+                              _categories.add(Category(name: newCategory));
+                            });
+                            setDialogState(() {
+                              _selectedCategory = newCategory;
+                            });
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final name = _nameController.text;
+                  final stock = int.tryParse(_stockController.text) ?? 0;
+                  final sku = _skuController.text;
+                  final purchasePrice = int.tryParse(_purchasePriceController.text) ?? 0;
+                  final sellingPrice = int.tryParse(_sellingPriceController.text) ?? 0;
+                  final category = _selectedCategory;
+
+                  if (name.isNotEmpty && sku.isNotEmpty && category != null) {
+                    if (product == null) {
+                      await dbHelper.insertProduct(
+                        Product(
+                          name: name,
+                          stock: stock,
+                          sku: sku,
+                          purchasePrice: purchasePrice,
+                          sellingPrice: sellingPrice,
+                          category: category,
+                        ),
+                      );
+                    } else {
+                      await dbHelper.updateProduct(
+                        Product(
+                          id: product.id,
+                          name: name,
+                          stock: stock,
+                          sku: sku,
+                          purchasePrice: purchasePrice,
+                          sellingPrice: sellingPrice,
+                          category: category,
+                        ),
+                      );
+                    }
+
+                    Navigator.of(context).pop();
+                    _refreshProducts();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Harap isi semua field dengan benar')),
+                    );
+                  }
+                },
+                child: Text(product == null ? 'Tambah' : 'Update'),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final name = _nameController.text;
-              final stock = int.tryParse(_stockController.text) ?? 0;
-              final sku = _skuController.text;
-              final purchasePrice = int.tryParse(_purchasePriceController.text) ?? 0;
-              final sellingPrice = int.tryParse(_sellingPriceController.text) ?? 0;
-              final category = _selectedCategory;
-
-              if (name.isNotEmpty && sku.isNotEmpty && category != null) {
-                if (product == null) {
-                  await dbHelper.insertProduct(
-                    Product(
-                      name: name,
-                      stock: stock,
-                      sku: sku,
-                      purchasePrice: purchasePrice,
-                      sellingPrice: sellingPrice,
-                      category: category,
-                    ),
-                  );
-                } else {
-                  await dbHelper.updateProduct(
-                    Product(
-                      id: product.id,
-                      name: name,
-                      stock: stock,
-                      sku: sku,
-                      purchasePrice: purchasePrice,
-                      sellingPrice: sellingPrice,
-                      category: category,
-                    ),
-                  );
-                }
-
-                Navigator.of(context).pop();
-                _refreshProducts();
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Harap isi semua field dengan benar')),
-                );
-              }
-            },
-            child: Text(product == null ? 'Tambah' : 'Update'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -227,7 +253,13 @@ class _ProductScreenState extends State<ProductScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
               title: Text(product.name),
-              subtitle: Text('Stok: ${product.stock}\nHarga Jual: Rp ${product.sellingPrice}\nKategori: ${product.category}'),
+              subtitle: Text(
+                'SKU: ${product.sku}\n'
+                    'Stok: ${product.stock}\n'
+                    'Harga Beli: Rp ${product.purchasePrice}\n'
+                    'Harga Jual: Rp ${product.sellingPrice}\n'
+                    'Kategori: ${product.category}',
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -248,11 +280,32 @@ class _ProductScreenState extends State<ProductScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(context, null),
-        backgroundColor: Colors.yellow[700],
-        foregroundColor: Colors.black,
-        child: const Icon(Icons.add),
+      floatingActionButton: PopupMenuButton<String>(
+        icon: const Icon(Icons.add, color: Colors.black),
+        color: Colors.yellow[700],
+        onSelected: (String value) {
+          if (value == 'form') {
+            _showForm(context, null);
+          } else if (value == 'scan') {
+            _scanBarcode();
+          }
+        },
+        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+          const PopupMenuItem<String>(
+            value: 'form',
+            child: ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Form'),
+            ),
+          ),
+          const PopupMenuItem<String>(
+            value: 'scan',
+            child: ListTile(
+              leading: Icon(Icons.qr_code_scanner),
+              title: Text('Scan'),
+            ),
+          ),
+        ],
       ),
     );
   }

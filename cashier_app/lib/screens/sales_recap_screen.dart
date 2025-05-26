@@ -16,7 +16,8 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
   late TabController _tabController;
   List<PurchaseTransaction> _transactions = [];
   final dbHelper = DatabaseHelper.instance;
-  DateTime _selectedDate = DateTime.now();
+  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7)); // Default to last 7 days
+  DateTime _endDate = DateTime.now();
   String? _storeName;
 
   @override
@@ -47,18 +48,20 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
     });
   }
 
-  void _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  void _selectDateRange(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDateRange: DateTimeRange(start: _startDate, end: _endDate),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
-      helpText: 'Pilih Tanggal',
-      fieldLabelText: 'Tanggal',
+      helpText: 'Pilih Rentang Tanggal',
+      fieldStartLabelText: 'Tanggal Mulai',
+      fieldEndLabelText: 'Tanggal Selesai',
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null) {
       setState(() {
-        _selectedDate = picked;
+        _startDate = picked.start;
+        _endDate = picked.end;
       });
     }
   }
@@ -68,9 +71,8 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
     int profit = 0;
 
     final filteredTransactions = _transactions.where((transaction) {
-      return transaction.date.year == _selectedDate.year &&
-          transaction.date.month == _selectedDate.month &&
-          transaction.date.day == _selectedDate.day;
+      return transaction.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+          transaction.date.isBefore(_endDate.add(const Duration(days: 1)));
     }).toList();
 
     for (var transaction in filteredTransactions) {
@@ -97,9 +99,8 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
 
   List<PieChartSectionData> _getPieChartData(int grossRevenue, int profit) {
     final filteredTransactions = _transactions.where((transaction) {
-      return transaction.date.year == _selectedDate.year &&
-          transaction.date.month == _selectedDate.month &&
-          transaction.date.day == _selectedDate.day;
+      return transaction.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+          transaction.date.isBefore(_endDate.add(const Duration(days: 1)));
     }).toList();
 
     if (filteredTransactions.isEmpty) {
@@ -141,9 +142,8 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
   List<Map<String, dynamic>> _getSoldItems() {
     final soldItems = <Map<String, dynamic>>[];
     final filteredTransactions = _transactions.where((transaction) {
-      return transaction.date.year == _selectedDate.year &&
-          transaction.date.month == _selectedDate.month &&
-          transaction.date.day == _selectedDate.day;
+      return transaction.date.isAfter(_startDate.subtract(const Duration(days: 1))) &&
+          transaction.date.isBefore(_endDate.add(const Duration(days: 1)));
     }).toList();
 
     for (var transaction in filteredTransactions) {
@@ -154,15 +154,15 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
         final price = item['price'] as int;
         final purchasePrice = item['purchasePrice'] as int;
         final total = quantity * price;
-        final profit = (price - purchasePrice) * quantity; // Calculate profit for this item
+        final profit = (price - purchasePrice) * quantity;
         soldItems.add({
           'name': name,
           'quantity': quantity,
           'price': price,
           'total': total,
-          'profit': profit, // Add profit
-          'cashier': transaction.cashier, // Add cashier name
-          'storeName': _storeName, // Add store name
+          'profit': profit,
+          'cashier': transaction.cashier,
+          'storeName': _storeName,
         });
       }
     }
@@ -191,12 +191,12 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Tanggal: ${DateFormat('dd MMM yyyy').format(_selectedDate)}',
+                  'Tanggal: ${DateFormat('dd MMM yyyy').format(_startDate)} - ${DateFormat('dd MMM yyyy').format(_endDate)}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
                   icon: const Icon(Icons.calendar_today),
-                  onPressed: () => _selectDate(context),
+                  onPressed: () => _selectDateRange(context),
                 ),
               ],
             ),
@@ -249,7 +249,7 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
                                   Text('Pendapatan Kotor (Omset)\nRp ${_formatNumber(grossRevenue)}'),
                                 ],
                               ),
-                              const SizedBox(width: 32), // Added spacing between legend items
+                              const SizedBox(width: 32),
                               Row(
                                 children: [
                                   Container(
@@ -274,7 +274,7 @@ class _SalesRecapScreenState extends State<SalesRecapScreen> with SingleTickerPr
                   child: Card(
                     elevation: 4,
                     child: soldItems.isEmpty
-                        ? const Center(child: Text('Tidak ada penjualan pada tanggal ini'))
+                        ? const Center(child: Text('Tidak ada penjualan pada rentang tanggal ini'))
                         : ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
