@@ -1,6 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'adapters.dart'; // Import Product, PurchaseTransaction, Category, StoreProfile, and Cashier adapters
+import 'adapters.dart'; // Import Product, PurchaseTransaction, Category, StoreProfile, Cashier, and StockTransaction adapters
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -9,6 +9,7 @@ class DatabaseHelper {
   static late Box<Category> _categoryBox;
   static late Box<StoreProfile> _storeProfileBox;
   static late Box<Cashier> _cashierBox;
+  static late Box<StockTransaction> _stockTransactionBox; // Added for StockTransaction
 
   DatabaseHelper._init();
 
@@ -21,6 +22,7 @@ class DatabaseHelper {
     Hive.registerAdapter(CategoryAdapter());
     Hive.registerAdapter(StoreProfileAdapter());
     Hive.registerAdapter(CashierAdapter());
+    Hive.registerAdapter(StockTransactionAdapter()); // Added for StockTransaction
 
     // Open all boxes
     _productBox = await Hive.openBox<Product>('productsBox');
@@ -28,6 +30,7 @@ class DatabaseHelper {
     _categoryBox = await Hive.openBox<Category>('categoriesBox');
     _storeProfileBox = await Hive.openBox<StoreProfile>('storeProfileBox');
     _cashierBox = await Hive.openBox<Cashier>('cashiersBox');
+    _stockTransactionBox = await Hive.openBox<StockTransaction>('stockTransactionsBox'); // Added for StockTransaction
 
     // Initialize with a default cashier if the box is empty
     if (_cashierBox.isEmpty) {
@@ -38,7 +41,7 @@ class DatabaseHelper {
   // Product Methods
   Future<int> insertProduct(Product product) async {
     final key = await _productBox.add(product);
-    product.id = key; // Now valid since id is not final
+    product.id = key;
     await _productBox.put(key, product);
     return key;
   }
@@ -68,7 +71,7 @@ class DatabaseHelper {
   // Transaction Methods
   Future<int> insertTransaction(PurchaseTransaction transaction) async {
     final key = await _transactionBox.add(transaction);
-    transaction.id = key; // Now valid since id is not final
+    transaction.id = key;
     await _transactionBox.put(key, transaction);
     return key;
   }
@@ -80,7 +83,7 @@ class DatabaseHelper {
   // Category Methods
   Future<int> insertCategory(Category category) async {
     final key = await _categoryBox.add(category);
-    category.id = key; // Now valid since id is not final
+    category.id = key;
     await _categoryBox.put(key, category);
     return key;
   }
@@ -125,7 +128,7 @@ class DatabaseHelper {
   // Cashier Methods
   Future<int> insertCashier(Cashier cashier) async {
     final key = await _cashierBox.add(cashier);
-    cashier.id = key; // Now valid since id is not final
+    cashier.id = key;
     await _cashierBox.put(key, cashier);
     return key;
   }
@@ -144,12 +147,37 @@ class DatabaseHelper {
     await _cashierBox.delete(id);
   }
 
+  // Stock Transaction Methods
+  Future<int> insertStockTransaction(StockTransaction transaction) async {
+    final key = await _stockTransactionBox.add(transaction);
+    transaction.id = key;
+    await _stockTransactionBox.put(key, transaction);
+    return key;
+  }
+
+  Future<List<StockTransaction>> getStockTransactions() async {
+    return _stockTransactionBox.values.toList();
+  }
+
   Future<void> close() async {
     await _productBox.close();
     await _transactionBox.close();
     await _categoryBox.close();
     await _storeProfileBox.close();
     await _cashierBox.close();
+    await _stockTransactionBox.close(); // Added for StockTransaction
     await Hive.close();
+  }
+
+  Future<void> resetDatabase() async {
+    await _productBox.clear();
+    await _transactionBox.clear();
+    await _categoryBox.clear();
+    await _storeProfileBox.clear();
+    await _cashierBox.clear();
+    await _stockTransactionBox.clear();
+    if (_cashierBox.isEmpty) {
+      await _cashierBox.add(Cashier(name: 'Kasir 1'));
+    }
   }
 }

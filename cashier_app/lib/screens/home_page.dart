@@ -34,6 +34,14 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Future<void> _resetDatabase() async {
+    await DatabaseHelper.instance.resetDatabase();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Database telah direset')),
+    );
+    _loadStoreProfile(); // Refresh store name after reset
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,6 +136,14 @@ class _HomePageState extends State<HomePage> {
                   context,
                   MaterialPageRoute(builder: (_) => const CashierManagementScreen()),
                 );
+              },
+            ),
+            _buildFeatureButton(
+              context,
+              icon: Icons.refresh,
+              label: 'Reset Database',
+              onTap: () {
+                _resetDatabase();
               },
             ),
           ],

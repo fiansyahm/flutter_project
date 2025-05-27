@@ -213,3 +213,61 @@ class Cashier extends HiveObject {
     );
   }
 }
+
+@HiveType(typeId: 5)
+class StockTransaction extends HiveObject {
+  @HiveField(0)
+  int? id;
+
+  @HiveField(1)
+  int productId;
+
+  @HiveField(2)
+  String productName;
+
+  @HiveField(3)
+  int quantity;
+
+  @HiveField(4)
+  String type; // "masuk" or "keluar"
+
+  @HiveField(5)
+  DateTime date;
+
+  @HiveField(6)
+  String sku;
+
+  StockTransaction({
+    this.id,
+    required this.productId,
+    required this.productName,
+    required this.quantity,
+    required this.type,
+    required this.date,
+    required this.sku,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'productId': productId,
+      'productName': productName,
+      'quantity': quantity,
+      'type': type,
+      'date': date.toIso8601String(),
+      'sku': sku,
+    };
+  }
+
+  factory StockTransaction.fromMap(Map<String, dynamic> map) {
+    return StockTransaction(
+      id: map['id'],
+      productId: map['productId'],
+      productName: map['productName'],
+      quantity: map['quantity'],
+      type: map['type'],
+      date: DateTime.parse(map['date']),
+      sku: map['sku'] ?? '', // Fallback for missing sku
+    );
+  }
+}

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
+import 'package:intl/intl.dart';
 import '../db/database_helper.dart';
 import '../db/adapters.dart';
 
@@ -192,9 +193,21 @@ class _ProductScreenState extends State<ProductScreen> {
                   final sellingPrice = int.tryParse(_sellingPriceController.text) ?? 0;
                   final category = _selectedCategory;
 
+                  // Check for duplicate SKU
+                  final existingProduct = _products.firstWhere(
+                        (p) => p.sku == sku && (product == null || p.id != product.id),
+                    orElse: () => Product(name: '', stock: 0, sku: '', purchasePrice: 0, sellingPrice: 0, category: ''),
+                  );
+                  if (existingProduct.sku.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('SKU sudah digunakan')),
+                    );
+                    return;
+                  }
+
                   if (name.isNotEmpty && sku.isNotEmpty && category != null) {
                     if (product == null) {
-                      await dbHelper.insertProduct(
+                      final newProductId = await dbHelper.insertProduct(
                         Product(
                           name: name,
                           stock: stock,
@@ -204,6 +217,21 @@ class _ProductScreenState extends State<ProductScreen> {
                           category: category,
                         ),
                       );
+                      Navigator.of(context).pop();
+                      _refreshProducts();
+                      if (stock > 0) {
+                        await dbHelper.insertStockTransaction(
+                          StockTransaction(
+                            productId: newProductId,
+                            productName: name,
+                            quantity: stock,
+                            type: 'masuk',
+                            date: DateTime.now(),
+                            sku: sku,
+                          ),
+                        );
+                        _showBarangMasukDialog(context, name, sku, stock);
+                      }
                     } else {
                       await dbHelper.updateProduct(
                         Product(
@@ -216,10 +244,9 @@ class _ProductScreenState extends State<ProductScreen> {
                           category: category,
                         ),
                       );
+                      Navigator.of(context).pop();
+                      _refreshProducts();
                     }
-
-                    Navigator.of(context).pop();
-                    _refreshProducts();
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Harap isi semua field dengan benar')),
@@ -231,6 +258,71 @@ class _ProductScreenState extends State<ProductScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showBarangMasukDialog(BuildContext context, String name, String sku, int stock) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Barang Masuk'),
+        content: Text(
+          'Nama: $name\n'
+              'SKU: $sku\n'
+              'Stok: $stock\n'
+              'Barang Masuk',
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, Product product) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text(
+          'Nama: ${product.name}\n'
+              'SKU: ${product.sku}\n'
+              'Stok: ${product.stock}\n'
+              'Barang Keluar',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Tidak'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (product.stock > 0) {
+                await dbHelper.insertStockTransaction(
+                  StockTransaction(
+                    productId: product.id!,
+                    productName: product.name,
+                    quantity: product.stock,
+                    type: 'keluar',
+                    date: DateTime.now(),
+                    sku: product.sku,
+                  ),
+                );
+              }
+              await dbHelper.deleteProduct(product.id!);
+              Navigator.of(context).pop();
+              _refreshProducts();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Produk berhasil dihapus')),
+              );
+            },
+            child: const Text('Ya'),
+          ),
+        ],
       ),
     );
   }
@@ -248,7 +340,7 @@ class _ProductScreenState extends State<ProductScreen> {
           : ListView.builder(
         itemCount: _products.length,
         itemBuilder: (ctx, i) {
-          final product = _products[i];
+          final product = _products[i]; // Declare product here
           return Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListTile(
@@ -269,10 +361,7 @@ class _ProductScreenState extends State<ProductScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () async {
-                      await dbHelper.deleteProduct(product.id!);
-                      _refreshProducts();
-                    },
+                    onPressed: () => _showDeleteConfirmationDialog(context, product),
                   ),
                 ],
               ),
