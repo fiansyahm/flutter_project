@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../db/database_helper.dart';
 import '../db/adapters.dart';
 
@@ -12,16 +14,24 @@ class ProductScreen extends StatefulWidget {
   State<ProductScreen> createState() => _ProductScreenState();
 }
 
-class _ProductScreenState extends State<ProductScreen> {
+class _ProductScreenState extends State<ProductScreen> with SingleTickerProviderStateMixin {
   List<Product> _products = [];
   List<Category> _categories = [];
-  final dbHelper = DatabaseHelper.instance;
+  final DatabaseHelper dbHelper = DatabaseHelper.instance;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _refreshProducts();
     _loadCategories();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _refreshProducts() async {
@@ -61,7 +71,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 try {
                   await dbHelper.insertCategory(Category(name: name));
                   Navigator.of(context).pop();
-                  onCategoryAdded(name); // Pass the new category name back
+                  onCategoryAdded(name);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Kategori berhasil ditambahkan')),
                   );
@@ -103,11 +113,12 @@ class _ProductScreenState extends State<ProductScreen> {
     final _purchasePriceController = TextEditingController(text: product?.purchasePrice.toString() ?? '');
     final _sellingPriceController = TextEditingController(text: product?.sellingPrice.toString() ?? '');
     String? _selectedCategory = product?.category;
+    final originalStock = product?.stock ?? 0;
 
     showDialog(
       context: context,
       builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) {
+        builder: (dialogContext, setDialogState) {
           return AlertDialog(
             title: Text(product == null ? 'Tambah Produk' : 'Edit Produk'),
             content: SingleChildScrollView(
@@ -118,13 +129,13 @@ class _ProductScreenState extends State<ProductScreen> {
                     decoration: const InputDecoration(labelText: 'Nama Produk'),
                   ),
                   TextField(
+                    controller: _skuController,
+                    decoration: const InputDecoration(labelText: 'SKU'),
+                  ),
+                  TextField(
                     controller: _stockController,
                     decoration: const InputDecoration(labelText: 'Stok'),
                     keyboardType: TextInputType.number,
-                  ),
-                  TextField(
-                    controller: _skuController,
-                    decoration: const InputDecoration(labelText: 'SKU'),
                   ),
                   TextField(
                     controller: _purchasePriceController,
@@ -164,7 +175,7 @@ class _ProductScreenState extends State<ProductScreen> {
                       IconButton(
                         icon: const Icon(Icons.add, color: Colors.green),
                         onPressed: () {
-                          _showAddCategoryDialog(context, (newCategory) {
+                          _showAddCategoryDialog(dialogContext, (newCategory) {
                             setState(() {
                               _categories.add(Category(name: newCategory));
                             });
@@ -181,7 +192,7 @@ class _ProductScreenState extends State<ProductScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Batal'),
               ),
               ElevatedButton(
@@ -196,10 +207,10 @@ class _ProductScreenState extends State<ProductScreen> {
                   // Check for duplicate SKU
                   final existingProduct = _products.firstWhere(
                         (p) => p.sku == sku && (product == null || p.id != product.id),
-                    orElse: () => Product(name: '', stock: 0, sku: '', purchasePrice: 0, sellingPrice: 0, category: ''),
+                    orElse: () => Product(id: null, name: '', stock: 0, sku: '', purchasePrice: 0, sellingPrice: 0, category: ''),
                   );
                   if (existingProduct.sku.isNotEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
                       const SnackBar(content: Text('SKU sudah digunakan')),
                     );
                     return;
@@ -209,6 +220,7 @@ class _ProductScreenState extends State<ProductScreen> {
                     if (product == null) {
                       final newProductId = await dbHelper.insertProduct(
                         Product(
+                          id: null,
                           name: name,
                           stock: stock,
                           sku: sku,
@@ -217,11 +229,12 @@ class _ProductScreenState extends State<ProductScreen> {
                           category: category,
                         ),
                       );
-                      Navigator.of(context).pop();
+                      Navigator.of(dialogContext).pop();
                       _refreshProducts();
                       if (stock > 0) {
                         await dbHelper.insertStockTransaction(
                           StockTransaction(
+                            id: null,
                             productId: newProductId,
                             productName: name,
                             quantity: stock,
@@ -233,6 +246,19 @@ class _ProductScreenState extends State<ProductScreen> {
                         _showBarangMasukDialog(context, name, sku, stock);
                       }
                     } else {
+                      if (stock != originalStock) {
+                        await dbHelper.insertStockTransaction(
+                          StockTransaction(
+                            id: null,
+                            productId: product.id!,
+                            productName: name,
+                            quantity: stock - originalStock,
+                            type: 'edit',
+                            date: DateTime.now(),
+                            sku: sku,
+                          ),
+                        );
+                      }
                       await dbHelper.updateProduct(
                         Product(
                           id: product.id,
@@ -244,11 +270,11 @@ class _ProductScreenState extends State<ProductScreen> {
                           category: category,
                         ),
                       );
-                      Navigator.of(context).pop();
+                      Navigator.of(dialogContext).pop();
                       _refreshProducts();
                     }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    ScaffoldMessenger.of(dialogContext).showSnackBar(
                       const SnackBar(content: Text('Harap isi semua field dengan benar')),
                     );
                   }
@@ -262,20 +288,25 @@ class _ProductScreenState extends State<ProductScreen> {
     );
   }
 
-  void _showBarangMasukDialog(BuildContext context, String name, String sku, int stock) {
+  void _showBarangMasukDialog(BuildContext parentContext, String name, String sku, int stock) {
     showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
+      context: parentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Barang Masuk'),
-        content: Text(
-          'Nama: $name\n'
-              'SKU: $sku\n'
-              'Stok: $stock\n'
-              'Barang Masuk',
+        content: SingleChildScrollView(
+          child: Text(
+            'Nama: $name\n'
+                'SKU: $sku\n'
+                'Stok: $stock\n'
+                'Barang Masuk',
+          ),
         ),
         actions: [
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
             child: const Text('OK'),
           ),
         ],
@@ -304,6 +335,7 @@ class _ProductScreenState extends State<ProductScreen> {
               if (product.stock > 0) {
                 await dbHelper.insertStockTransaction(
                   StockTransaction(
+                    id: null,
                     productId: product.id!,
                     productName: product.name,
                     quantity: product.stock,
@@ -334,40 +366,58 @@ class _ProductScreenState extends State<ProductScreen> {
         title: const Text('Kelola Produk'),
         backgroundColor: Colors.yellow[700],
         foregroundColor: Colors.black,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Stok'),
+            Tab(text: 'Riwayat'),
+          ],
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.black,
+        ),
       ),
-      body: _products.isEmpty
-          ? const Center(child: Text('Tidak ada produk tersedia'))
-          : ListView.builder(
-        itemCount: _products.length,
-        itemBuilder: (ctx, i) {
-          final product = _products[i]; // Declare product here
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: ListTile(
-              title: Text(product.name),
-              subtitle: Text(
-                'SKU: ${product.sku}\n'
-                    'Stok: ${product.stock}\n'
-                    'Harga Beli: Rp ${product.purchasePrice}\n'
-                    'Harga Jual: Rp ${product.sellingPrice}\n'
-                    'Kategori: ${product.category}',
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _showForm(context, product),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 1: Stok (Product List)
+          _products.isEmpty
+              ? const Center(child: Text('Tidak ada produk tersedia'))
+              : ListView.builder(
+            itemCount: _products.length,
+            itemBuilder: (ctx, i) {
+              final product = _products[i];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(product.name),
+                  subtitle: Text(
+                    'SKU: ${product.sku}\n'
+                        'Stok: ${product.stock}\n'
+                        'Harga Beli: Rp ${product.purchasePrice}\n'
+                        'Harga Jual: Rp ${product.sellingPrice}\n'
+                        'Kategori: ${product.category}',
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _showDeleteConfirmationDialog(context, product),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => _showForm(context, product),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _showDeleteConfirmationDialog(context, product),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              );
+            },
+          ),
+          // Tab 2: Riwayat (Stock Edit History)
+          const StockHistoryScreen(),
+        ],
       ),
       floatingActionButton: PopupMenuButton<String>(
         icon: const Icon(Icons.add, color: Colors.black),
@@ -396,6 +446,43 @@ class _ProductScreenState extends State<ProductScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class StockHistoryScreen extends StatelessWidget {
+  const StockHistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<StockTransaction>>(
+      future: DatabaseHelper.instance.getStockTransactions(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        final transactions = snapshot.data?.where((t) => t.type == 'edit').toList() ?? [];
+        if (transactions.isEmpty) {
+          return const Center(child: Text('Tidak ada riwayat edit stok'));
+        }
+        return ListView.builder(
+          itemCount: transactions.length,
+          itemBuilder: (ctx, i) {
+            final transaction = transactions[i];
+            return ListTile(
+              title: Text('Edit Stok - ${transaction.productName}'),
+              subtitle: Text(
+                'SKU: ${transaction.sku}\n'
+                    'Perubahan: ${transaction.quantity > 0 ? '+' : ''}${transaction.quantity}\n'
+                    'Tanggal: ${DateFormat('yyyy-MM-dd HH:mm').format(transaction.date)}',
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

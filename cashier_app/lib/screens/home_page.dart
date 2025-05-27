@@ -29,9 +29,33 @@ class _HomePageState extends State<HomePage> {
   void _loadStoreProfile() async {
     final profile = await DatabaseHelper.instance.getStoreProfile();
     setState(() {
-      _storeName = profile?.storeName ?? 'Aplikasi Kasir'; // Generic fallback
+      _storeName = profile?.storeName ?? 'Aplikasi Kasir';
       _isLoading = false;
     });
+  }
+
+  void _showResetConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Konfirmasi'),
+        content: const Text('Apakah Anda yakin ingin mereset seluruh database? Semua data akan hilang.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _resetDatabase();
+            },
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _resetDatabase() async {
@@ -39,7 +63,7 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Database telah direset')),
     );
-    _loadStoreProfile(); // Refresh store name after reset
+    _loadStoreProfile();
   }
 
   @override
@@ -56,9 +80,7 @@ class _HomePageState extends State<HomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ProfileStoreScreen()),
-              ).then((_) {
-                _loadStoreProfile(); // Refresh store name after editing
-              });
+              ).then((_) => _loadStoreProfile());
             },
           ),
         ],
@@ -142,9 +164,7 @@ class _HomePageState extends State<HomePage> {
               context,
               icon: Icons.refresh,
               label: 'Reset Database',
-              onTap: () {
-                _resetDatabase();
-              },
+              onTap: _showResetConfirmationDialog,
             ),
           ],
         ),
