@@ -1,6 +1,5 @@
-// widgets/custom_bottom_bar.dart
 import 'package:flutter/material.dart';
-
+import '../screens/profile_screen.dart';
 import '../screens/report_screen.dart';
 
 class CustomBottomBar extends StatelessWidget {
@@ -14,11 +13,6 @@ class CustomBottomBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // IconButton(
-          //   icon: const Icon(Icons.note),
-          //   onPressed: () {},
-          //   tooltip: 'Catatan',
-          // ),
           IconButton(
             icon: const Icon(Icons.pie_chart),
             onPressed: () {
@@ -30,14 +24,14 @@ class CustomBottomBar extends StatelessWidget {
             tooltip: 'Grafik',
           ),
           const SizedBox(width: 48), // Space for the FAB
-          // IconButton(
-          //   icon: const Icon(Icons.description),
-          //   onPressed: () {},
-          //   tooltip: 'Note',
-          // ),
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
             tooltip: 'Saya',
           ),
         ],

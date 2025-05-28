@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'db/database_helper.dart';
-import 'screens/home_page.dart';
+import 'screens/splash_screen.dart'; // Updated to use SplashScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,9 +15,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Keuangan Rumah Tangga',
+      title: 'Karen Family',
       theme: ThemeData(primarySwatch: Colors.yellow),
-      home: const HomePage(),
+      home: const SplashScreen(), // Changed to SplashScreen
     );
   }
 }
