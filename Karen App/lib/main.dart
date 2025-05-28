@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'screens/splash_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'db/database_helper.dart';
 import 'screens/home_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper().initHive();
   runApp(const MyApp());
 }
 
@@ -12,21 +15,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Karen Family',
-      theme: ThemeData(
-        primarySwatch: Colors.yellow,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.yellow,
-          foregroundColor: Colors.black,
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.yellow,
-          foregroundColor: Colors.black,
-        ),
-      ),
-      home: const SplashScreen(),
+      title: 'Keuangan Rumah Tangga',
+      theme: ThemeData(primarySwatch: Colors.yellow),
+      home: const HomePage(),
     );
   }
 }

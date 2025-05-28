@@ -1,5 +1,5 @@
-// screens/calendar_screen.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../db/database_helper.dart';
 import '../models/transaction.dart';
 
@@ -24,11 +24,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _loadTransactions() async {
     final allTransactions = await dbHelper.getTransactions();
     setState(() {
-      transactions = allTransactions
-          .where((t) =>
-      t.date.year == selectedDate.year &&
-          t.date.month == selectedDate.month)
-          .toList();
+      transactions = allTransactions.where((t) {
+        try {
+          final transactionDate = DateTime.parse(t.date);
+          return transactionDate.year == selectedDate.year &&
+              transactionDate.month == selectedDate.month;
+        } catch (e) {
+          print('Error parsing date: ${t.date}');
+          return false;
+        }
+      }).toList();
     });
   }
 
@@ -81,12 +86,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate the first day of the month and the number of days
     final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
     final daysInMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0).day;
-    final firstDayWeekday = firstDayOfMonth.weekday % 7; // Adjust for Sunday start
+    final firstDayWeekday = firstDayOfMonth.weekday % 7;
 
-    // Create a list of days with their transactions
     List<Widget> dayWidgets = [];
     for (int i = 0; i < firstDayWeekday; i++) {
       dayWidgets.add(const SizedBox());
@@ -94,12 +97,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
     for (int day = 1; day <= daysInMonth; day++) {
       final currentDay = DateTime(selectedDate.year, selectedDate.month, day);
-      final dayTransactions = transactions
-          .where((t) =>
-      t.date.year == currentDay.year &&
-          t.date.month == currentDay.month &&
-          t.date.day == currentDay.day)
-          .toList();
+      final dayTransactions = transactions.where((t) {
+        try {
+          final transactionDate = DateTime.parse(t.date);
+          return transactionDate.year == currentDay.year &&
+              transactionDate.month == currentDay.month &&
+              transactionDate.day == currentDay.day;
+        } catch (e) {
+          print('Error parsing date: ${t.date}');
+          return false;
+        }
+      }).toList();
       final income = dayTransactions
           .where((t) => t.type == 'income')
           .fold(0, (sum, t) => sum + t.amount);
@@ -108,27 +116,58 @@ class _CalendarScreenState extends State<CalendarScreen> {
           .fold(0, (sum, t) => sum + t.amount);
 
       dayWidgets.add(
-        Container(
-          margin: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: income > 0 || expense > 0 ? Colors.green[100] : null,
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('$day'),
-              if (income > 0)
-                Text(
-                  '${(income / 1000).toStringAsFixed(0)}K',
-                  style: const TextStyle(color: Colors.green, fontSize: 12),
+        GestureDetector(
+          onTap: () {
+            if (dayTransactions.isNotEmpty) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('$day ${_getMonthName(selectedDate.month)} ${selectedDate.year}'),
+                  content: SizedBox(
+                    width: double.maxFinite,
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: dayTransactions
+                          .map((t) => ListTile(
+                        title: Text(t.title),
+                        subtitle: Text('Rp ${t.amount} - ${t.category}'),
+                        trailing: Text(t.type == 'income' ? 'Pemasukan' : 'Pengeluaran'),
+                      ))
+                          .toList(),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Tutup'),
+                    ),
+                  ],
                 ),
-              if (expense > 0)
-                Text(
-                  '${(expense / 1000).toStringAsFixed(0)}K',
-                  style: const TextStyle(color: Colors.red, fontSize: 12),
-                ),
-            ],
+              );
+            }
+          },
+          child: Container(
+            margin: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: income > 0 || expense > 0 ? Colors.green[100] : null,
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('$day'),
+                if (income > 0)
+                  Text(
+                    '${(income / 1000).toStringAsFixed(0)}K',
+                    style: const TextStyle(color: Colors.green, fontSize: 12),
+                  ),
+                if (expense > 0)
+                  Text(
+                    '${(expense / 1000).toStringAsFixed(0)}K',
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  ),
+              ],
+            ),
           ),
         ),
       );
@@ -139,9 +178,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
+            const Text(
               'Kalender',
-              style: const TextStyle(color: Colors.black),
+              style: TextStyle(color: Colors.black),
             ),
             const SizedBox(width: 10),
             GestureDetector(
@@ -167,7 +206,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
       body: Column(
         children: [
-          // Days of the week
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: const [
@@ -181,7 +219,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ],
           ),
           const Divider(),
-          // Calendar grid
           Expanded(
             child: GridView.count(
               crossAxisCount: 7,

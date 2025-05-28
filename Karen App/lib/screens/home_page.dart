@@ -1,5 +1,5 @@
-// screens/home_page.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'calendar_screen.dart';
 import 'report_screen.dart';
 import '../db/database_helper.dart';
@@ -9,6 +9,7 @@ import '../widgets/transaction_form.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -26,14 +27,19 @@ class _HomePageState extends State<HomePage> {
     _refreshTransactions();
   }
 
-  void _refreshTransactions() async {
+  Future<void> _refreshTransactions() async {
     final data = await dbHelper.getTransactions();
     setState(() {
-      _transactions = data
-          .where((t) =>
-      t.date.year == selectedDate.year &&
-          t.date.month == selectedDate.month)
-          .toList();
+      _transactions = data.where((t) {
+        try {
+          final parsedDate = DateTime.parse(t.date);
+          return parsedDate.year == selectedDate.year &&
+              parsedDate.month == selectedDate.month;
+        } catch (e) {
+          print('Error parsing date: ${t.date}');
+          return false;
+        }
+      }).toList();
     });
   }
 
@@ -83,13 +89,15 @@ class _HomePageState extends State<HomePage> {
         amountController: _amountController,
         initialType: transaction?.type ?? 'income',
         initialCategory: transaction?.category ?? 'Belanja',
+        initialDate: transaction?.date ?? DateFormat('yyyy-MM-dd').format(DateTime.now()),
         onSubmit: (title, amount, type, category, date) async {
+          final formattedDate = date; // Date sudah String dari TransactionForm
           if (transaction == null) {
             await dbHelper.insertTransaction(
               Transaction(
                 title: title,
                 amount: amount,
-                date: date,
+                date: formattedDate,
                 type: type,
                 category: category,
               ),
@@ -100,13 +108,12 @@ class _HomePageState extends State<HomePage> {
                 id: transaction.id,
                 title: title,
                 amount: amount,
-                date: transaction.date,
+                date: formattedDate,
                 type: type,
                 category: category,
               ),
             );
           }
-
           Navigator.of(context).pop();
           _refreshTransactions();
         },
@@ -162,7 +169,9 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: () {},
+            onPressed: () {
+              // Implementasi pencarian
+            },
           ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
@@ -180,82 +189,101 @@ class _HomePageState extends State<HomePage> {
           Container(
             color: Colors.yellow[700],
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
-                Text(
-                  '${selectedDate.year}',
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black),
-                ),
-                GestureDetector(
-                  onTap: () => _selectMonth(context), // Make the month clickable
-                  child: Row(
-                    children: [
-                      Text(
-                        '${_getMonthName(selectedDate.month)}',
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      '${selectedDate.year}',
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _selectMonth(context),
+                      child: Row(
+                        children: [
+                          Text(
+                            _getMonthName(selectedDate.month),
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
+                          ),
+                          const Icon(Icons.arrow_drop_down, color: Colors.black),
+                        ],
                       ),
-                      const Icon(Icons.arrow_drop_down, color: Colors.black),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  'Pengeluaran: ${_formatNumber(_totalExpense)}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                Text(
-                  'Pemasukan: ${_formatNumber(_totalIncome)}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                Text(
-                  'Saldo: ${_formatNumber(_totalSaldo)}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pengeluaran: ${_formatNumber(_totalExpense)}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                    Text(
+                      'Pemasukan: ${_formatNumber(_totalIncome)}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                    Text(
+                      'Saldo: ${_formatNumber(_totalSaldo)}',
+                      style: const TextStyle(fontSize: 14, color: Colors.black),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _transactions.length,
-              itemBuilder: (ctx, i) {
-                final t = _transactions[i];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                    t.type == 'income' ? Colors.green : Colors.pink,
-                    child: Icon(
-                      t.type == 'income' ? Icons.arrow_downward : Icons.fastfood,
-                      color: Colors.white,
-                    ),
-                  ),
-                  title: Text(t.title),
-                  subtitle: Text(
-                      '${t.date.day} ${_getMonthName(t.date.month)} - ${t.type == 'income' ? 'Pemasukan' : 'Pengeluaran'}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Rp ${_formatNumber(t.amount)}',
-                        style: TextStyle(
-                            color:
-                            t.type == 'income' ? Colors.green : Colors.red),
+            child: RefreshIndicator(
+              onRefresh: _refreshTransactions,
+              child: ListView.builder(
+                itemCount: _transactions.length,
+                itemBuilder: (ctx, i) {
+                  final t = _transactions[i];
+                  DateTime parsedDate;
+                  try {
+                    parsedDate = DateTime.parse(t.date);
+                  } catch (e) {
+                    parsedDate = DateTime.now();
+                    print('Error parsing date: ${t.date}');
+                  }
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: t.type == 'income' ? Colors.green : Colors.pink,
+                      child: Icon(
+                        t.type == 'income' ? Icons.arrow_downward : Icons.fastfood,
+                        color: Colors.white,
                       ),
-                      IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _showForm(transaction: t)),
-                      IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () => _deleteTransaction(t.id!)),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                    title: Text(t.title),
+                    subtitle: Text(
+                        '${parsedDate.day} ${_getMonthName(parsedDate.month)} - ${t.type == 'income' ? 'Pemasukan' : 'Pengeluaran'}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Rp ${_formatNumber(t.amount)}',
+                          style: TextStyle(
+                              color: t.type == 'income' ? Colors.green : Colors.red),
+                        ),
+                        IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _showForm(transaction: t)),
+                        IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _deleteTransaction(t.id!)),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -269,5 +297,12 @@ class _HomePageState extends State<HomePage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: const CustomBottomBar(),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _amountController.dispose();
+    super.dispose();
   }
 }

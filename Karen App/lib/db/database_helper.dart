@@ -1,5 +1,4 @@
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:path/path.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/transaction.dart';
 
 class DatabaseHelper {
@@ -7,56 +6,58 @@ class DatabaseHelper {
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  static sqflite.Database? _database;
+  static Box<Transaction>? _transactionBox;
 
-  Future<sqflite.Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  Future<void> initHive() async {
+    await Hive.initFlutter();
+    Hive.registerAdapter(TransactionAdapter());
+    _transactionBox = await Hive.openBox<Transaction>('transactions');
   }
 
-  Future<sqflite.Database> _initDatabase() async {
-    final dbPath = await sqflite.getDatabasesPath();
-    final path = join(dbPath, 'transactions.db');
-
-    return await sqflite.openDatabase(
-      path,
-      version: 1,
-      onCreate: _onCreate,
-    );
-  }
-
-  Future<void> _onCreate(sqflite.Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        amount INTEGER,
-        date TEXT,
-        type TEXT,
-        category TEXT
-      )
-    ''');
+  Future<Box<Transaction>> get transactionBox async {
+    if (_transactionBox == null || !_transactionBox!.isOpen) {
+      _transactionBox = await Hive.openBox<Transaction>('transactions');
+    }
+    return _transactionBox!;
   }
 
   Future<List<Transaction>> getTransactions() async {
-    final db = await database;
-    final maps = await db.query('transactions', orderBy: 'date DESC');
-    return maps.map((map) => Transaction.fromMap(map)).toList();
+    final box = await transactionBox;
+    final transactions = box.values.toList();
+    transactions.sort((a, b) => b.date.compareTo(a.date));
+    return transactions;
   }
 
   Future<void> insertTransaction(Transaction transaction) async {
-    final db = await database;
-    await db.insert('transactions', transaction.toMap(), conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
+    final box = await transactionBox;
+    final newTransaction = transaction.id == null
+        ? Transaction(
+      id: box.length + 1,
+      title: transaction.title,
+      amount: transaction.amount,
+      date: transaction.date,
+      type: transaction.type,
+      category: transaction.category,
+    )
+        : transaction;
+    await box.put(newTransaction.id, newTransaction);
   }
 
   Future<void> updateTransaction(Transaction transaction) async {
-    final db = await database;
-    await db.update('transactions', transaction.toMap(), where: 'id = ?', whereArgs: [transaction.id]);
+    final box = await transactionBox;
+    if (transaction.id != null) {
+      await box.put(transaction.id, transaction);
+    }
   }
 
   Future<void> deleteTransaction(int id) async {
-    final db = await database;
-    await db.delete('transactions', where: 'id = ?', whereArgs: [id]);
+    final box = await transactionBox;
+    await box.delete(id);
+  }
+
+  Future<void> close() async {
+    if (_transactionBox != null && _transactionBox!.isOpen) {
+      await _transactionBox!.close();
+    }
   }
 }

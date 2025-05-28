@@ -1,11 +1,26 @@
-// models/transaction.dart
-class Transaction {
+import 'package:hive/hive.dart';
+
+part 'transaction.g.dart';
+
+@HiveType(typeId: 0)
+class Transaction extends HiveObject {
+  @HiveField(0)
   final int? id;
+
+  @HiveField(1)
   final String title;
+
+  @HiveField(2)
   final int amount;
-  final DateTime date;
-  final String type; // 'income' or 'expense'
-  final String category; // New field for category
+
+  @HiveField(3)
+  final String date;
+
+  @HiveField(4)
+  final String type;
+
+  @HiveField(5)
+  final String category;
 
   Transaction({
     this.id,
@@ -21,7 +36,7 @@ class Transaction {
       'id': id,
       'title': title,
       'amount': amount,
-      'date': date.toIso8601String(),
+      'date': date,
       'type': type,
       'category': category,
     };
@@ -29,12 +44,12 @@ class Transaction {
 
   factory Transaction.fromMap(Map<String, dynamic> map) {
     return Transaction(
-      id: map['id'],
-      title: map['title'],
-      amount: map['amount'],
-      date: DateTime.parse(map['date']),
-      type: map['type'],
-      category: map['category'],
+      id: map['id'] as int?,
+      title: map['title'] as String,
+      amount: map['amount'] as int,
+      date: map['date'] as String,
+      type: map['type'] as String,
+      category: map['category'] as String,
     );
   }
 }
