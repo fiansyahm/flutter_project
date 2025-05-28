@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'calendar_screen.dart';
 import 'report_screen.dart';
-import 'profile_screen.dart'; // Import the new screen
+import 'profile_screen.dart';
 import '../db/database_helper.dart';
 import '../models/transaction.dart';
 import '../widgets/custom_bottom_bar.dart';
 import '../widgets/transaction_form.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isGoldTheme;
+
+  const HomePage({super.key, required this.onThemeToggle, required this.isGoldTheme});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -21,7 +24,6 @@ class _HomePageState extends State<HomePage> {
   final _amountController = TextEditingController();
   final dbHelper = DatabaseHelper();
   DateTime selectedDate = DateTime.now();
-  bool isGoldTheme = true; // Default to Gold theme
 
   @override
   void initState() {
@@ -54,9 +56,9 @@ class _HomePageState extends State<HomePage> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.black,
-              onPrimary: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+              onPrimary: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
             ),
@@ -161,195 +163,163 @@ class _HomePageState extends State<HomePage> {
     return months[month - 1];
   }
 
-  void _toggleTheme() {
-    setState(() {
-      isGoldTheme = !isGoldTheme;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: isGoldTheme
-          ? ThemeData(
-        primaryColor: Colors.yellow[700],
-        scaffoldBackgroundColor: Colors.grey[200],
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.yellow[700],
-          foregroundColor: Colors.black,
-        ),
-        bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: Colors.yellow[700],
-        ),
-      )
-          : ThemeData(
-        primaryColor: Colors.black,
-        scaffoldBackgroundColor: Colors.grey[900],
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: Colors.black,
-        ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: Colors.white),
-          bodyMedium: TextStyle(color: Colors.white),
-        ),
-      ),
-      home: Builder(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Pengelola Keuangan'),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  // Implementasi pencarian
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.calendar_today),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const CalendarScreen()),
-                  );
-                },
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Pengelola Keuangan'),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              // Implementasi pencarian
+            },
           ),
-          body: Column(
-            children: [
-              Container(
-                color: Theme.of(context).primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                child: Column(
+          IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CalendarScreen(
+                    onThemeToggle: widget.onThemeToggle,
+                    isGoldTheme: widget.isGoldTheme,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: Theme.of(context).primaryColor,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${selectedDate.year}',
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _selectMonth(context),
-                          child: Row(
-                            children: [
-                              Text(
-                                _getMonthName(selectedDate.month),
-                                style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(context).textTheme.bodyLarge?.color),
-                              ),
-                              Icon(Icons.arrow_drop_down,
-                                  color: Theme.of(context).textTheme.bodyLarge?.color),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${selectedDate.year}',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Pengeluaran: ${_formatNumber(_totalExpense)}',
-                          style: TextStyle(
-                              fontSize: 14,
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () => _selectMonth(context),
+                      child: Row(
+                        children: [
+                          Text(
+                            _getMonthName(selectedDate.month),
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).textTheme.bodyLarge?.color),
+                          ),
+                          Icon(Icons.arrow_drop_down,
                               color: Theme.of(context).textTheme.bodyLarge?.color),
-                        ),
-                        Text(
-                          'Pemasukan: ${_formatNumber(_totalIncome)}',
-                          style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(context).textTheme.bodyLarge?.color),
-                        ),
-                        Text(
-                          'Saldo: ${_formatNumber(_totalSaldo)}',
-                          style: TextStyle(
-                              fontSize: 14,
-                              color: Theme.of(context).textTheme.bodyLarge?.color),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: _refreshTransactions,
-                  child: ListView.builder(
-                    itemCount: _transactions.length,
-                    itemBuilder: (ctx, i) {
-                      final t = _transactions[i];
-                      DateTime parsedDate;
-                      try {
-                        parsedDate = DateTime.parse(t.date);
-                      } catch (e) {
-                        parsedDate = DateTime.now();
-                        print('Error parsing date: ${t.date}');
-                      }
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                          t.type == 'income' ? Colors.green : Colors.pink,
-                          child: Icon(
-                            t.type == 'income'
-                                ? Icons.arrow_downward
-                                : Icons.fastfood,
-                            color: Colors.white,
-                          ),
-                        ),
-                        title: Text(t.title,
-                            style: TextStyle(
-                                color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        subtitle: Text(
-                            '${parsedDate.day} ${_getMonthName(parsedDate.month)} - ${t.type == 'income' ? 'Pemasukan' : 'Pengeluaran'}',
-                            style: TextStyle(
-                                color: Theme.of(context).textTheme.bodyLarge?.color)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Rp ${_formatNumber(t.amount)}',
-                              style: TextStyle(
-                                  color: t.type == 'income'
-                                      ? Colors.green
-                                      : Colors.red),
-                            ),
-                            IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () => _showForm(transaction: t)),
-                            IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => _deleteTransaction(t.id!)),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Pengeluaran: ${_formatNumber(_totalExpense)}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
+                    ),
+                    Text(
+                      'Pemasukan: ${_formatNumber(_totalIncome)}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
+                    ),
+                    Text(
+                      'Saldo: ${_formatNumber(_totalSaldo)}',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
+                    ),
+                  ],
                 ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _refreshTransactions,
+              child: ListView.builder(
+                itemCount: _transactions.length,
+                itemBuilder: (ctx, i) {
+                  final t = _transactions[i];
+                  DateTime parsedDate;
+                  try {
+                    parsedDate = DateTime.parse(t.date);
+                  } catch (e) {
+                    parsedDate = DateTime.now();
+                    print('Error parsing date: ${t.date}');
+                  }
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: t.type == 'income' ? Colors.green : Colors.pink,
+                      child: Icon(
+                        t.type == 'income' ? Icons.arrow_downward : Icons.fastfood,
+                        color: Colors.white,
+                      ),
+                    ),
+                    title: Text(t.title,
+                        style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyLarge?.color)),
+                    subtitle: Text(
+                        '${parsedDate.day} ${_getMonthName(parsedDate.month)} - ${t.type == 'income' ? 'Pemasukan' : 'Pengeluaran'}',
+                        style: TextStyle(
+                            color: Theme.of(context).textTheme.bodyMedium?.color)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Rp ${_formatNumber(t.amount)}',
+                          style: TextStyle(
+                              color: t.type == 'income' ? Colors.green : Colors.red),
+                        ),
+                        IconButton(
+                            icon: Icon(Icons.edit,
+                                color: Theme.of(context).textTheme.bodyLarge?.color),
+                            onPressed: () => _showForm(transaction: t)),
+                        IconButton(
+                            icon: Icon(Icons.delete,
+                                color: Theme.of(context).textTheme.bodyLarge?.color),
+                            onPressed: () => _deleteTransaction(t.id!)),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ],
+            ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _showForm(),
-            backgroundColor: Theme.of(context).primaryColor,
-            foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
-            child: const Icon(Icons.add),
-          ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-          bottomNavigationBar: CustomBottomBar(),
-        ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showForm(),
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: CustomBottomBar(
+        onThemeToggle: widget.onThemeToggle,
+        isGoldTheme: widget.isGoldTheme,
       ),
     );
   }

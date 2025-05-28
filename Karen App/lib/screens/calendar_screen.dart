@@ -4,7 +4,10 @@ import '../db/database_helper.dart';
 import '../models/transaction.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isGoldTheme;
+
+  const CalendarScreen({super.key, required this.onThemeToggle, required this.isGoldTheme});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
@@ -46,9 +49,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.black,
-              onPrimary: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+              onPrimary: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
             ),
@@ -155,7 +158,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('$day'),
+                Text('$day', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color)),
                 if (income > 0)
                   Text(
                     '${(income / 1000).toStringAsFixed(0)}K',
@@ -178,9 +181,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
+            Text(
               'Kalender',
-              style: TextStyle(color: Colors.black),
+              style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
             ),
             const SizedBox(width: 10),
             GestureDetector(
@@ -189,16 +192,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 children: [
                   Text(
                     '${_getMonthName(selectedDate.month)} ${selectedDate.year}',
-                    style: const TextStyle(color: Colors.black),
+                    style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                   ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.black),
+                  Icon(Icons.arrow_drop_down,
+                      color: Theme.of(context).textTheme.bodyLarge?.color),
                 ],
               ),
             ),
           ],
         ),
-        backgroundColor: Colors.yellow[700],
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),

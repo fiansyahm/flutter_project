@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isGoldTheme;
+
+  const ProfileScreen({super.key, required this.onThemeToggle, required this.isGoldTheme});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String userName = 'John Doe'; // Default name
+  String userName = 'John Doe';
   final TextEditingController _nameController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _nameController.text = userName; // Set initial value for the controller
+    _nameController.text = userName;
   }
 
   void _editName() {
@@ -37,9 +40,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                userName = _nameController.text.isNotEmpty
-                    ? _nameController.text
-                    : userName; // Update name if input is not empty
+                userName = _nameController.text.isNotEmpty ? _nameController.text : userName;
               });
               Navigator.pop(context);
             },
@@ -80,30 +81,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   userName,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
+                  icon: Icon(Icons.edit,
+                      size: 20, color: Theme.of(context).textTheme.bodyLarge?.color),
                   onPressed: _editName,
                 ),
               ],
             ),
             const SizedBox(height: 32),
             ListTile(
-              leading: const Icon(Icons.color_lens),
-              title: const Text('Ubah Tema'),
+              leading: Icon(Icons.color_lens,
+                  color: Theme.of(context).textTheme.bodyLarge?.color),
+              title: Text(
+                'Ubah Tema (Gold/Black)',
+                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+              ),
               trailing: Switch(
-                value: Theme.of(context).primaryColor == Colors.yellow[700],
+                value: widget.isGoldTheme,
+                activeColor: Colors.yellow[700],
+                inactiveTrackColor: Colors.grey,
                 onChanged: (value) {
-                  Navigator.pop(context); // Return to home to refresh theme
+                  widget.onThemeToggle();
                 },
               ),
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Tema diubah melalui pengaturan utama')),
-                );
-              },
             ),
           ],
         ),

@@ -7,8 +7,8 @@ class TransactionForm extends StatefulWidget {
   final TextEditingController amountController;
   final String initialType;
   final String initialCategory;
-  final String initialDate; // Changed to String
-  final Function(String, int, String, String, String) onSubmit; // Updated to expect String for date
+  final String initialDate;
+  final Function(String, int, String, String, String) onSubmit;
 
   const TransactionForm({
     super.key,
@@ -51,9 +51,9 @@ class _TransactionFormState extends State<TransactionForm> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.black,
-              onPrimary: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+              onPrimary: Colors.black, // Force black text in date picker
               surface: Colors.white,
               onSurface: Colors.black,
             ),
@@ -82,11 +82,13 @@ class _TransactionFormState extends State<TransactionForm> {
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center, // Center align content
           children: [
             // Tabs
             Container(
-              color: Colors.yellow[700],
+              color: Theme.of(context).primaryColor,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, // Center tabs
                 children: [
                   Expanded(
                     child: GestureDetector(
@@ -98,12 +100,14 @@ class _TransactionFormState extends State<TransactionForm> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        color: selectedType == 'expense' ? Colors.black : Colors.yellow[700],
+                        color: selectedType == 'expense'
+                            ? Colors.grey[800]
+                            : Theme.of(context).primaryColor,
                         child: Center(
                           child: Text(
                             'Pengeluaran',
-                            style: TextStyle(
-                              color: selectedType == 'expense' ? Colors.white : Colors.black,
+                            style: const TextStyle(
+                              color: Colors.black, // Force black text
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -121,12 +125,14 @@ class _TransactionFormState extends State<TransactionForm> {
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        color: selectedType == 'income' ? Colors.black : Colors.yellow[700],
+                        color: selectedType == 'income'
+                            ? Colors.grey[800]
+                            : Theme.of(context).primaryColor,
                         child: Center(
                           child: Text(
                             'Pemasukan',
-                            style: TextStyle(
-                              color: selectedType == 'income' ? Colors.white : Colors.black,
+                            style: const TextStyle(
+                              color: Colors.black, // Force black text
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -139,17 +145,19 @@ class _TransactionFormState extends State<TransactionForm> {
                       onTap: () {
                         setState(() {
                           selectedType = 'transfer';
-                          selectedCategory = 'Transfer'; // Default category for transfer
+                          selectedCategory = 'Transfer';
                         });
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        color: selectedType == 'transfer' ? Colors.black : Colors.yellow[700],
+                        color: selectedType == 'transfer'
+                            ? Colors.grey[800]
+                            : Theme.of(context).primaryColor,
                         child: Center(
                           child: Text(
                             'Transfer',
-                            style: TextStyle(
-                              color: selectedType == 'transfer' ? Colors.white : Colors.black,
+                            style: const TextStyle(
+                              color: Colors.black, // Force black text
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -161,9 +169,9 @@ class _TransactionFormState extends State<TransactionForm> {
               ),
             ),
             // Category Grid
-            if (selectedType != 'transfer') // Hide category grid for transfer
+            if (selectedType != 'transfer')
               Container(
-                height: 200, // Reduced height for better UX
+                height: 200,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: GridView.count(
                   crossAxisCount: 4,
@@ -181,19 +189,22 @@ class _TransactionFormState extends State<TransactionForm> {
                       children: [
                         CircleAvatar(
                           backgroundColor: selectedCategory == category.name
-                              ? Colors.yellow[700]
+                              ? Theme.of(context).primaryColor
                               : Colors.grey[200],
                           child: Icon(
                             category.icon,
                             color: selectedCategory == category.name
-                                ? Colors.black
+                                ? Colors.black // Force black icon
                                 : Colors.grey,
                           ),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           category.name,
-                          style: const TextStyle(fontSize: 12),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black, // Force black text
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -206,29 +217,40 @@ class _TransactionFormState extends State<TransactionForm> {
             TextField(
               readOnly: true,
               onTap: () => _selectDate(context),
+              style: const TextStyle(color: Colors.black), // Force black text
               decoration: InputDecoration(
                 labelText: 'Tanggal',
+                labelStyle: const TextStyle(color: Colors.black), // Force black text
                 hintText: DateFormat('yyyy-MM-dd').format(selectedDate),
+                hintStyle: const TextStyle(color: Colors.black54), // Slightly lighter black
                 border: const OutlineInputBorder(),
-                suffixIcon: const Icon(Icons.calendar_today),
+                suffixIcon: const Icon(
+                  Icons.calendar_today,
+                  color: Colors.black, // Force black icon
+                ),
               ),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: widget.amountController,
-              decoration: const InputDecoration(
+              style: const TextStyle(color: Colors.black), // Force black text
+              decoration: InputDecoration(
                 labelText: 'Jumlah',
-                border: OutlineInputBorder(),
+                labelStyle: const TextStyle(color: Colors.black), // Force black text
+                border: const OutlineInputBorder(),
               ),
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: widget.titleController,
-              decoration: const InputDecoration(
+              style: const TextStyle(color: Colors.black), // Force black text
+              decoration: InputDecoration(
                 labelText: 'Catatan',
+                labelStyle: const TextStyle(color: Colors.black), // Force black text
                 hintText: 'Masukkan catatan...',
-                border: OutlineInputBorder(),
+                hintStyle: const TextStyle(color: Colors.black54), // Slightly lighter black
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -238,18 +260,29 @@ class _TransactionFormState extends State<TransactionForm> {
               children: [
                 TextButton(
                   onPressed: () => _selectDate(context),
-                  child: Text(DateFormat('dd MMM yyyy').format(selectedDate)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.black, // Force black text
+                  ),
+                  child: Text(
+                    DateFormat('dd MMM yyyy').format(selectedDate), // Matches image format
+                  ),
                 ),
                 Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.camera_alt),
+                      icon: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.black, // Force black icon
+                      ),
                       onPressed: () {
                         // Implementasi scan kamera
                       },
                     ),
                     IconButton(
-                      icon: const Icon(Icons.check),
+                      icon: const Icon(
+                        Icons.check,
+                        color: Colors.black, // Force black icon
+                      ),
                       onPressed: () {
                         final title = widget.titleController.text.trim();
                         final amount = int.tryParse(widget.amountController.text) ?? 0;
@@ -265,7 +298,7 @@ class _TransactionFormState extends State<TransactionForm> {
                           amount,
                           selectedType,
                           selectedCategory,
-                          DateFormat('yyyy-MM-dd').format(selectedDate), // Convert to String
+                          DateFormat('yyyy-MM-dd').format(selectedDate),
                         );
                       },
                     ),

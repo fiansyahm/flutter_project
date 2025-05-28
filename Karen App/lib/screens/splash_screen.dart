@@ -1,90 +1,72 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
-import '../main.dart';
-import 'home_page.dart'; // Mengarah ke MainPage di main.dart
+import 'home_page.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isGoldTheme;
+
+  const SplashScreen({super.key, required this.onThemeToggle, required this.isGoldTheme});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _controller.forward();
-
-    // Navigasi ke MainPage setelah 3 detik
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
-          );
-        }
-      });
+    Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => HomePage(
+              onThemeToggle: widget.onThemeToggle,
+              isGoldTheme: widget.isGoldTheme,
+            ),
+          ),
+        );
+      }
     });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.yellow[700],
+      backgroundColor: Theme.of(context).primaryColor,
       body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/logo.png',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.cover,
-                ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.family_restroom,
+              size: 100,
+              color: Colors.white,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Karen Family',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
-              const SizedBox(height: 20),
-              const Text(
-                'Karen Scanner',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
+            ),
+            const SizedBox(height: 20),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               ),
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Memuat...',
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
               ),
-              const SizedBox(height: 10),
-              const Text(
-                'Memuat...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

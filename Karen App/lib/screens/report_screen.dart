@@ -5,7 +5,10 @@ import '../db/database_helper.dart';
 import '../models/transaction.dart';
 
 class ReportScreen extends StatefulWidget {
-  const ReportScreen({super.key});
+  final VoidCallback onThemeToggle;
+  final bool isGoldTheme;
+
+  const ReportScreen({super.key, required this.onThemeToggle, required this.isGoldTheme});
 
   @override
   State<ReportScreen> createState() => _ReportScreenState();
@@ -48,9 +51,9 @@ class _ReportScreenState extends State<ReportScreen> {
       builder: (context, child) {
         return Theme(
           data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Colors.black,
-              onPrimary: Colors.white,
+            colorScheme: ColorScheme.light(
+              primary: Theme.of(context).primaryColor,
+              onPrimary: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
             ),
@@ -101,21 +104,19 @@ class _ReportScreenState extends State<ReportScreen> {
         .fold(0, (sum, t) => sum + t.amount);
     final balance = income - expense;
 
-    // Calculate values for the donut chart
     final total = income + (expense > income ? expense : income);
     final expensePercentage = total > 0 ? (expense / total * 100).toStringAsFixed(1) : '0';
     final balanceValue = balance >= 0 ? balance.toDouble() : 0.0;
     final balancePercentage = total > 0 ? (balanceValue / total * 100).toStringAsFixed(1) : '0';
 
-    // Ensure non-zero values to prevent chart rendering issues
     final expenseChartValue = expense > 0 ? expense.toDouble() : 0.1;
     final balanceChartValue = balanceValue > 0 ? balanceValue : 0.1;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Laporan'),
-        backgroundColor: Colors.yellow[700],
-        foregroundColor: Colors.black,
+        backgroundColor: Theme.of(context).primaryColor,
+        foregroundColor: Theme.of(context).textTheme.bodyLarge?.color,
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -131,9 +132,8 @@ class _ReportScreenState extends State<ReportScreen> {
       ),
       body: Column(
         children: [
-          // Tabs
           Container(
-            color: Colors.yellow[700],
+            color: Theme.of(context).primaryColor,
             child: Row(
               children: [
                 Expanded(
@@ -141,12 +141,16 @@ class _ReportScreenState extends State<ReportScreen> {
                     onTap: () => setState(() => selectedTab = 'Analisis'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      color: selectedTab == 'Analisis' ? Colors.black : Colors.yellow[700],
+                      color: selectedTab == 'Analisis'
+                          ? Colors.grey[800]
+                          : Theme.of(context).primaryColor,
                       child: Center(
                         child: Text(
                           'Analisis',
                           style: TextStyle(
-                            color: selectedTab == 'Analisis' ? Colors.white : Colors.black,
+                            color: selectedTab == 'Analisis'
+                                ? Colors.white
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -159,12 +163,16 @@ class _ReportScreenState extends State<ReportScreen> {
                     onTap: () => setState(() => selectedTab = 'Arus Kas'),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      color: selectedTab == 'Arus Kas' ? Colors.black : Colors.yellow[700],
+                      color: selectedTab == 'Arus Kas'
+                          ? Colors.grey[800]
+                          : Theme.of(context).primaryColor,
                       child: Center(
                         child: Text(
                           'Arus Kas',
                           style: TextStyle(
-                            color: selectedTab == 'Arus Kas' ? Colors.white : Colors.black,
+                            color: selectedTab == 'Arus Kas'
+                                ? Colors.white
+                                : Theme.of(context).textTheme.bodyLarge?.color,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -175,13 +183,11 @@ class _ReportScreenState extends State<ReportScreen> {
               ],
             ),
           ),
-          // Content based on selected tab
           Expanded(
             child: selectedTab == 'Analisis'
                 ? SingleChildScrollView(
               child: Column(
                 children: [
-                  // Monthly Statistics
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Row(
@@ -189,8 +195,11 @@ class _ReportScreenState extends State<ReportScreen> {
                       children: [
                         Text(
                           '${_getMonthName(selectedDate.month)} ${selectedDate.year}',
-                          style: const TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
                         ),
                         Text(
                           'Saldo: Rp ${_formatNumber(balance)}',
@@ -210,10 +219,13 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Statistik Bulanan',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Row(
@@ -222,8 +234,13 @@ class _ReportScreenState extends State<ReportScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Pengeluaran:',
-                                      style: TextStyle(fontSize: 14)),
+                                  Text('Pengeluaran:',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color)),
                                   Text(
                                     'Rp ${_formatNumber(expense)}',
                                     style: const TextStyle(
@@ -234,8 +251,13 @@ class _ReportScreenState extends State<ReportScreen> {
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Pemasukan:',
-                                      style: TextStyle(fontSize: 14)),
+                                  Text('Pemasukan:',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          color: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.color)),
                                   Text(
                                     'Rp ${_formatNumber(income)}',
                                     style: const TextStyle(
@@ -249,7 +271,6 @@ class _ReportScreenState extends State<ReportScreen> {
                       ),
                     ),
                   ),
-                  // Monthly Budget (Anggaran Bulanan) - Text Only
                   Card(
                     margin: const EdgeInsets.all(16),
                     child: Padding(
@@ -257,10 +278,13 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Anggaran Bulanan',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
                           ),
                           const SizedBox(height: 10),
                           Column(
@@ -276,12 +300,22 @@ class _ReportScreenState extends State<ReportScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 'Pemasukan: Rp ${_formatNumber(income)}',
-                                style: const TextStyle(fontSize: 14),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Pengeluaran: Rp ${_formatNumber(expense)}',
-                                style: const TextStyle(fontSize: 14),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color),
                               ),
                             ],
                           ),
@@ -289,7 +323,6 @@ class _ReportScreenState extends State<ReportScreen> {
                       ),
                     ),
                   ),
-                  // Donut Chart - New Section
                   Card(
                     margin: const EdgeInsets.all(16),
                     child: Padding(
@@ -297,10 +330,13 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Grafik Anggaran Bulanan',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Center(
@@ -308,10 +344,15 @@ class _ReportScreenState extends State<ReportScreen> {
                               height: 150,
                               width: 150,
                               child: total == 0
-                                  ? const Center(
+                                  ? Center(
                                 child: Text(
                                   'Tidak ada data',
-                                  style: TextStyle(fontSize: 12),
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.color),
                                   textAlign: TextAlign.center,
                                 ),
                               )
@@ -357,10 +398,12 @@ class _ReportScreenState extends State<ReportScreen> {
                 : RefreshIndicator(
               onRefresh: _loadTransactions,
               child: transactions.isEmpty
-                  ? const Center(
+                  ? Center(
                 child: Text(
                   'Tidak ada transaksi untuk bulan ini',
-                  style: TextStyle(fontSize: 16),
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).textTheme.bodyLarge?.color),
                 ),
               )
                   : ListView.builder(
@@ -390,9 +433,15 @@ class _ReportScreenState extends State<ReportScreen> {
                         color: Colors.white,
                       ),
                     ),
-                    title: Text(transaction.title),
+                    title: Text(
+                      transaction.title,
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyLarge?.color),
+                    ),
                     subtitle: Text(
                       '${transactionDate.day} ${_getMonthName(transactionDate.month)} - ${transaction.category}',
+                      style: TextStyle(
+                          color: Theme.of(context).textTheme.bodyMedium?.color),
                     ),
                     trailing: Text(
                       'Rp ${_formatNumber(transaction.amount)}',
