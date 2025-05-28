@@ -206,7 +206,7 @@ class _ReportScreenState extends State<ReportScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: balance >= 0 ? Colors.green : Colors.red,
+                            color: Colors.green, // Static green for balance
                           ),
                         ),
                       ],
@@ -224,7 +224,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -237,10 +237,8 @@ class _ReportScreenState extends State<ReportScreen> {
                                   Text('Pengeluaran:',
                                       style: TextStyle(
                                           fontSize: 14,
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.color)),
+                                          color: Colors.black
+                                      )),
                                   Text(
                                     'Rp ${_formatNumber(expense)}',
                                     style: const TextStyle(
@@ -254,14 +252,12 @@ class _ReportScreenState extends State<ReportScreen> {
                                   Text('Pemasukan:',
                                       style: TextStyle(
                                           fontSize: 14,
-                                          color: Theme.of(context)
-                                              .textTheme
-                                              .bodyMedium
-                                              ?.color)),
+                                          color: Colors.black
+                                      )),
                                   Text(
                                     'Rp ${_formatNumber(income)}',
                                     style: const TextStyle(
-                                        fontSize: 14, color: Colors.green),
+                                        fontSize: 14, color: Colors.green), // Static green
                                   ),
                                 ],
                               ),
@@ -283,7 +279,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -294,7 +290,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                 'Tersisa: Rp ${_formatNumber(balance)}',
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: balance >= 0 ? Colors.green : Colors.red,
+                                  color: Colors.green, // Static green
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -302,10 +298,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                 'Pemasukan: Rp ${_formatNumber(income)}',
                                 style: TextStyle(
                                     fontSize: 14,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.color),
+                                    color: Colors.green), // Static green
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -335,7 +328,7 @@ class _ReportScreenState extends State<ReportScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                              color: Colors.black,
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -372,7 +365,7 @@ class _ReportScreenState extends State<ReportScreen> {
                                     ),
                                     PieChartSectionData(
                                       value: balanceChartValue,
-                                      color: Colors.green,
+                                      color: Colors.green, // Static green
                                       title: '$balancePercentage%',
                                       radius: 60,
                                       titleStyle: const TextStyle(

@@ -53,7 +53,7 @@ class _TransactionFormState extends State<TransactionForm> {
           data: ThemeData.light().copyWith(
             colorScheme: ColorScheme.light(
               primary: Theme.of(context).primaryColor,
-              onPrimary: Colors.black, // Force black text in date picker
+              onPrimary: Theme.of(context).textTheme.bodyLarge?.color ?? Colors.white,
               surface: Colors.white,
               onSurface: Colors.black,
             ),
@@ -72,6 +72,17 @@ class _TransactionFormState extends State<TransactionForm> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine text/icon color based on theme
+    final textColor = Theme.of(context).primaryColor == Colors.black
+        ? Colors.white
+        : Colors.black;
+    final hintTextColor = Theme.of(context).primaryColor == Colors.black
+        ? Colors.white70
+        : Colors.black54;
+    final selectedIconColor = Theme.of(context).primaryColor == Colors.black
+        ? Colors.white
+        : Colors.black;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -82,13 +93,13 @@ class _TransactionFormState extends State<TransactionForm> {
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center, // Center align content
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Tabs
             Container(
               color: Theme.of(context).primaryColor,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center, // Center tabs
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Expanded(
                     child: GestureDetector(
@@ -106,8 +117,10 @@ class _TransactionFormState extends State<TransactionForm> {
                         child: Center(
                           child: Text(
                             'Pengeluaran',
-                            style: const TextStyle(
-                              color: Colors.black, // Force black text
+                            style: TextStyle(
+                              color: selectedType == 'expense'
+                                  ? Colors.white
+                                  : textColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -131,8 +144,10 @@ class _TransactionFormState extends State<TransactionForm> {
                         child: Center(
                           child: Text(
                             'Pemasukan',
-                            style: const TextStyle(
-                              color: Colors.black, // Force black text
+                            style: TextStyle(
+                              color: selectedType == 'income'
+                                  ? Colors.white
+                                  : textColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -156,8 +171,10 @@ class _TransactionFormState extends State<TransactionForm> {
                         child: Center(
                           child: Text(
                             'Transfer',
-                            style: const TextStyle(
-                              color: Colors.black, // Force black text
+                            style: TextStyle(
+                              color: selectedType == 'transfer'
+                                  ? Colors.white
+                                  : textColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -194,7 +211,7 @@ class _TransactionFormState extends State<TransactionForm> {
                           child: Icon(
                             category.icon,
                             color: selectedCategory == category.name
-                                ? Colors.black // Force black icon
+                                ? selectedIconColor
                                 : Colors.grey,
                           ),
                         ),
