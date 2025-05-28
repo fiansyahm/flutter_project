@@ -5,7 +5,16 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive for the app
+  await Hive.initFlutter();
+
+  // Open the userBox for storing userName
+  await Hive.openBox<String>('userBox');
+
+  // Initialize DatabaseHelper for transactions
   await DatabaseHelper().initHive();
+
   runApp(const MyApp());
 }
 

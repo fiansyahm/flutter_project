@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -11,12 +12,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String userName = 'John Doe';
+  late String userName;
   final TextEditingController _nameController = TextEditingController();
+  late Box<String> _userBox;
 
   @override
   void initState() {
     super.initState();
+    // Open the Hive box and load the user name
+    _userBox = Hive.box<String>('userBox');
+    userName = _userBox.get('userName', defaultValue: 'John Doe')!;
     _nameController.text = userName;
   }
 
@@ -39,10 +44,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                userName = _nameController.text.isNotEmpty ? _nameController.text : userName;
-              });
-              Navigator.pop(context);
+              final newName = _nameController.text.trim();
+              if (newName.isNotEmpty) {
+                setState(() {
+                  userName = newName;
+                  _userBox.put('userName', userName);
+                });
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama tidak boleh kosong')),
+                );
+              }
             },
             child: const Text('Simpan'),
           ),
